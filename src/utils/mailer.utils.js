@@ -8,7 +8,7 @@ const sendEmail = async ({ email, emailType, userId }) => {
     const hashToken = crypto.randomBytes(20).toString("hex");
 
     // Set token expiry
-    const expiry = new Date(Date.now() + 3600000);
+    const expiry = new Date(Date.now() + 3600000).toISOString(); // Convert to ISO string
 
     switch (emailType) {
       // Update user with token and expiry
