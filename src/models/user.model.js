@@ -21,7 +21,10 @@ class User extends Model {
         },
         password: { type: "string" },
         email: { type: "string" },
-        userType: { type: "string", enum: ["Admin", "Donor", "Recipient"] },
+        userType: {
+          type: "string",
+          enum: ["Admin", "Student", "Teacher", "Parent"],
+        },
         isVerified: { type: "boolean", default: false },
         phoneNumber: { type: "string" },
         forgotPasswordToken: { type: "string", nullable: true },
