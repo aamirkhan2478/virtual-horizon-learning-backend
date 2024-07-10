@@ -75,8 +75,6 @@ const register = async (req, res) => {
 // @route   POST /api/user/verify-email
 // @desc    Verify user email
 // @access  Public
-import User from "../models/User.js";
-
 const verifyEmail = async (req, res) => {
   const { token } = req.body;
 
