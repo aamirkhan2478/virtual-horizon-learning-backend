@@ -3,30 +3,28 @@ const express = require("express");
 
 const {
     register,
-    // login,
-    // verifyEmail,
-    // forgotPassword,
-    // getUser,
-    // resetPassword,
+    login,
+    verifyEmail,
+    forgotPassword,
+    resetPassword,
     // updateUser,
-    // changePassword,
+    changePassword,
     // updateImage,
-    // resendEmail,
+    resendEmail,
     // getAllUsers,
 } = require("../controllers/user.controllers.js");
 
 const router = express.Router();
 
 router.post("/register", register);
-// router.post("/verify-email", verifyEmail);
-// router.post("/login", login);
-// router.post("/forgot-password", forgotPassword);
-// router.post("/reset-password", resetPassword);
-// router.get("/current-user", auth, getUser);
+router.post("/verify-email", verifyEmail);
+router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 // router.put("/update-user", auth, updateUser);
-// router.put("/change-password", auth, changePassword);
+router.put("/change-password", auth, changePassword);
 // router.patch("/update-image", auth, updateImage);
-// router.post("/resend-email", resendEmail);
+router.post("/resend-email", resendEmail);
 // router.get("/all", auth, getAllUsers);
 
 module.exports = router;
