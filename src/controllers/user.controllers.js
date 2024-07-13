@@ -84,12 +84,10 @@ const verifyEmail = async (req, res) => {
 
   try {
     // Find user with token and expiry
-    const user = await User.query().findOne({
-      verifyToken: token,
-      verifyTokenExpiry: User.raw("verifyTokenExpiry > ?", [
-        new Date().toISOString(),
-      ]),
-    });
+    const user = await User.query()
+      .where("verifyToken", token)
+      .andWhere("verifyTokenExpiry", ">", new Date().toISOString())
+      .first();
 
     // Check if user exists
     if (!user) {
