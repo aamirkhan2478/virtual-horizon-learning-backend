@@ -233,12 +233,10 @@ const resetPassword = async (req, res) => {
 
   try {
     // Find user with token and expiry
-    const user = await User.query().findOne({
-      forgotPasswordToken: token,
-      forgotPasswordTokenExpiry: User.raw("forgotPasswordTokenExpiry > ?", [
-        new Date().toISOString(),
-      ]),
-    });
+    const user = await User.query()
+      .where("forgotPasswordToken", token)
+      .andWhere("forgotPasswordTokenExpiry", ">", new Date().toISOString())
+      .first();
 
     // Check if user exists
     if (!user) {
