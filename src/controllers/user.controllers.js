@@ -362,6 +362,42 @@ const resendEmail = async (req, res) => {
   }
 };
 
+// @route   PUT /api/user
+// @desc    Update loggedIn user
+// @access  Private
+const updateUser = async (req, res) => {
+  try {
+    // Find user by id
+    const user = await User.query().findById(req.user.id);
+
+    // Check if user exists
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "User not found", success: false });
+    }
+
+    // Get user details from request body
+    const { name, email, phoneNumber } = req.body;
+
+    // Update user details
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+
+    // Save user
+    await user.$query().patch();
+
+    // return success response
+    return res
+      .status(200)
+      .json({ message: "User updated successfully", success: true });
+  } catch (error) {
+    // return error response
+    return res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -370,4 +406,5 @@ module.exports = {
   resetPassword,
   changePassword,
   resendEmail,
+  updateUser,
 };
