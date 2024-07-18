@@ -7,7 +7,7 @@ const {
     verifyEmail,
     forgotPassword,
     resetPassword,
-    // updateUser,
+    updateUser,
     changePassword,
     // updateImage,
     resendEmail,
@@ -21,7 +21,7 @@ router.post("/verify-email", verifyEmail);
 router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
-// router.put("/update-user", auth, updateUser);
+router.put("/update-user", auth, updateUser);
 router.put("/change-password", auth, changePassword);
 // router.patch("/update-image", auth, updateImage);
 router.post("/resend-email", resendEmail);
