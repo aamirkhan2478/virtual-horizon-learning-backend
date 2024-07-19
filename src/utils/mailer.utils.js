@@ -45,14 +45,16 @@ const sendEmail = async ({ email, emailType, userId }) => {
       subject: emailType === "verify" ? "Verify Email" : "Reset Password",
       html:
         emailType === "verify"
-          ? `<h1>Verify Email</h1>
-      <p>Click <a href="${
-        process.env.CLIENT_URL_PRODUCTION || process.env.CLIENT_URL_DEVELOPMENT
-      }/verify/${hashToken}">here</a> to verify your email</p>`
+          ? process.env.CLIENT_URL_DEVELOPMENT
+            ? `<h1>Verify Email</h1>
+      <p>Click <a href="${process.env.CLIENT_URL_DEVELOPMENT}/verify/${hashToken}">here</a> to verify your email</p>`
+            : `<h1>Verify Email</h1>
+      <p>Click <a href="${process.env.CLIENT_URL_PRODUCTION}/verify/${hashToken}">here</a> to verify your email</p>`
+          : process.env.CLIENT_URL_DEVELOPMENT
+          ? `<h1>Reset Password</h1>
+      <p>Click <a href="${process.env.CLIENT_URL_DEVELOPMENT}/reset-password/${hashToken}">here</a> to reset your password</p>`
           : `<h1>Reset Password</h1>
-      <p>Click <a href="${
-        process.env.CLIENT_URL_PRODUCTION || process.env.CLIENT_URL_DEVELOPMENT
-      }/reset-password/${hashToken}">here</a> to reset your password</p>`,
+      <p>Click <a href="${process.env.CLIENT_URL_PRODUCTION}/reset-password/${hashToken}">here</a> to reset your password</p>`,
     };
 
     const mailResponse = await transporter.sendMail(mailOptions);
