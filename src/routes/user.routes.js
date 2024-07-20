@@ -2,17 +2,18 @@ const express = require("express");
 const auth = require("../middlewares/auth.middleware.js");
 
 const {
-    register,
-    login,
-    verifyEmail,
-    forgotPassword,
-    resetPassword,
-    updateUser,
-    changePassword,
-    // updateImage,
-    resendEmail,
-    // getAllUsers,
+  register,
+  login,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+  updateUser,
+  changePassword,
+  updateImage,
+  resendEmail,
+  // getAllUsers,
 } = require("../controllers/user.controllers.js");
+const upload = require("../middlewares/multer.middleware.js");
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.put("/update-user", auth, updateUser);
 router.put("/change-password", auth, changePassword);
-// router.patch("/update-image", auth, updateImage);
+router.patch("/update-image", auth, upload.single("pic"), updateImage);
 router.post("/resend-email", resendEmail);
 // router.get("/all", auth, getAllUsers);
 

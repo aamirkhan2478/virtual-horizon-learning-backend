@@ -362,7 +362,7 @@ const resendEmail = async (req, res) => {
   }
 };
 
-// @route   PUT /api/user
+// @route   PUT /api/user/update-user
 // @desc    Update loggedIn user
 // @access  Private
 const updateUser = async (req, res) => {
@@ -398,6 +398,54 @@ const updateUser = async (req, res) => {
   }
 };
 
+// @route   PATCH /api/user/update-image
+// @desc    Update loggedIn user image
+// @access  Private
+const updateImage = async (req, res) => {
+  const file = req.file;
+
+  // https://domainname.com/uploads/filename-dfse3453ds.jpeg
+  const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+
+  // Check if files are available
+  if (!file) {
+    return res
+      .status(400)
+      .json({ message: "Please select an file!", success: false });
+  }
+
+  // Create user image path
+  const pic = `${basePath}${file.filename}`;
+
+  try {
+    // Find user by id
+    const user = await User.query().findById(req.user.id);
+
+    // Check if user exists
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "User not found", success: false });
+    }
+
+    // Update user image
+    user.pic = pic;
+
+    // Save user
+    await user.$query().patch();
+
+    // return success response
+    return res.status(200).json({
+      pic: user.pic,
+      message: "Image updated successfully",
+      success: true,
+    });
+  } catch (error) {
+    // return error response
+    return res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -407,4 +455,5 @@ module.exports = {
   changePassword,
   resendEmail,
   updateUser,
+  updateImage,
 };

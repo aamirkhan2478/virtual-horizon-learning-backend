@@ -25,6 +25,10 @@ const server = http.createServer(app);
 app.use(express.json({ limit: "30mb", extended: true }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
 
+// Serve static files from the 'public' directory
+app.use(express.static("./public"));
+
+// CORS middleware to allow requests from client
 app.use(
   cors({
     origin: [
