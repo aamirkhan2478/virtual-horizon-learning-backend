@@ -9,7 +9,7 @@ exports.up = function (knex) {
     table.string("description").notNullable();
     table.string("thumbnail").notNullable();
     table.string("type").notNullable();
-    table.json("video");
+    table.json("videos");
     table.string("pdf");
   });
 };

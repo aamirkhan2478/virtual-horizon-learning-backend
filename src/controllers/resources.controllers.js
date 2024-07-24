@@ -27,31 +27,41 @@ const createResource = async (req, res) => {
       .json({ message: "Please select an file!", success: false });
   }
 
-  // Create user image path
-  const thumbnail = `${basePath}${files.thumbnail[0].filename}`;
+  // Get thumbnail image
+  const thumbnail = [];
+  if (files.thumbnail) {
+    files.thumbnail.map((file) =>
+      thumbnail.push(`${basePath}${file.filename}`)
+    );
+  }
 
   // Thumbnail is required
-  if (!thumbnail) {
+  if (!thumbnail.length) {
     return res
       .status(400)
       .json({ message: "Please select an image!", success: false });
   }
 
   // Check if video or pdf files are available
-  const video = files.video
-    ? files.video.map((file) => `${basePath}${file.filename}`)
-    : "";
-  const pdf = files.pdf
-    ? files.pdf.map((file) => `${basePath}${file.filename}`)
-    : "";
+  const videos = [];
+  const pdf = [];
+  if (type === "Video") {
+    if (files.video) {
+      files.video.map((file) => videos.push(`${basePath}${file.filename}`));
+    }
+  } else {
+    if (files.pdf) {
+      files.pdf.map((file) => pdf.push(`${basePath}${file.filename}`));
+    }
+  }
 
   try {
     const resource = await Resources.query().insert({
       title: title,
       description: description,
       thumbnail: thumbnail[0],
-      video: video,
-      pdf: pdf[0],
+      videos: videos.length ? JSON.stringify(videos) : [],
+      pdf: pdf.length ? pdf[0] : "",
       type: type,
     });
 

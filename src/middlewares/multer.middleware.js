@@ -23,7 +23,6 @@ const storage = multer.diskStorage({
     cb(uploadError, "public/uploads");
   },
   filename: function (_req, file, cb) {
-    console.log(file);
     const fileName = file.originalname.split(" ").join("-");
     const convertedFileName = fileName.toLowerCase().split(".");
     const nameBeforeDot = convertedFileName[0];
