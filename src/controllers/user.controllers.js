@@ -1,5 +1,6 @@
 const User = require("../models/user.model.js");
 const { sendEmail } = require("../utils/mailer.utils.js");
+const bcrypt = require("bcryptjs");
 
 // @route   POST /api/user/register
 // @desc    Register new user
@@ -245,9 +246,12 @@ const resetPassword = async (req, res) => {
         .json({ message: "Invalid or expired token", success: false });
     }
 
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     // Update user with new password
     await User.query().patchAndFetchById(user.id, {
-      password,
+      password: hashedPassword,
       forgotPasswordToken: null,
       forgotPasswordTokenExpiry: null,
     });
@@ -301,12 +305,13 @@ const changePassword = async (req, res) => {
         .json({ message: "Invalid current password", success: false });
     }
 
-    // Update user with new password
-    const newUser = await User.query().patchAndFetchById(user.id, {
-      password: newPassword,
-    });
+    // hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    newUser.hashPassword();
+    // Update user with new password
+    await User.query().patchAndFetchById(user.id, {
+      password: hashedPassword,
+    });
 
     return res
       .status(200)
