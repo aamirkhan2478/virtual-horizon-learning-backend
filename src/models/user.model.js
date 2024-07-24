@@ -47,12 +47,6 @@ class User extends Model {
     await this.hashPassword();
   }
 
-  async $beforeUpdate() {
-    if (this.password) {
-      await this.hashPassword();
-    }
-  }
-
   async hashPassword() {
     this.password = await bcrypt.hash(this.password, 12);
   }

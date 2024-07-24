@@ -302,9 +302,11 @@ const changePassword = async (req, res) => {
     }
 
     // Update user with new password
-    await User.query().patchAndFetchById(user.id, {
+    const newUser = await User.query().patchAndFetchById(user.id, {
       password: newPassword,
     });
+
+    newUser.hashPassword();
 
     return res
       .status(200)
