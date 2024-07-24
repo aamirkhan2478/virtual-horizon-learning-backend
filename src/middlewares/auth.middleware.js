@@ -14,7 +14,9 @@ const verifyToken = (token) => {
 };
 
 const findUser = async (id) => {
-  const user = await User.query().findById(id).select("id", "name", "email", "userType");
+  const user = await User.query()
+    .findById(id)
+    .select("id", "name", "email", "userType");
 
   if (!user) {
     throw new Error("Invalid access token", 401);
@@ -32,7 +34,7 @@ const auth = async (req, res, next) => {
     next();
   } catch (error) {
     return res.status(401).json({
-      message: error?.message || "Not authorized to access this route",
+      message: "Not authorized to access this route",
       success: false,
     });
   }

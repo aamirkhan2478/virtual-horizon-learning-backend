@@ -1,0 +1,167 @@
+const Resources = require("../models/resources.model");
+
+// @route   POST /api/resource/create
+// @desc    Create New Resource
+// @access  Private
+const createResource = async (req, res) => {
+  // Get data from request body
+  const { title, description, type } = req.body;
+
+  // Get files from request
+  const files = req.files;
+
+  // Check if fields are not empty
+  if (!title || !description) {
+    return res
+      .status(400)
+      .json({ message: "Please enter all fields!", success: false });
+  }
+
+  // https://domainname.com/uploads/filename-dfse3453ds.jpeg
+  const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+
+  // Check if files are available
+  if (!files) {
+    return res
+      .status(400)
+      .json({ message: "Please select an file!", success: false });
+  }
+
+  // Create user image path
+  const thumbnail = `${basePath}${files.thumbnail[0].filename}`;
+
+  // Thumbnail is required
+  if (!thumbnail) {
+    return res
+      .status(400)
+      .json({ message: "Please select an image!", success: false });
+  }
+
+  // Check if video or pdf files are available
+  const video = files.video
+    ? files.video.map((file) => `${basePath}${file.filename}`)
+    : "";
+  const pdf = files.pdf
+    ? files.pdf.map((file) => `${basePath}${file.filename}`)
+    : "";
+
+  try {
+    const resource = await Resources.query().insert({
+      title: title,
+      description: description,
+      thumbnail: thumbnail[0],
+      video: video,
+      pdf: pdf[0],
+      type: type,
+    });
+
+    res.status(201).json(resource);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+// @route   GET /api/resource/all
+// @desc    Show All Resources
+// @access  Private
+const getResources = async (req, res) => {
+  try {
+    const resources = await Resources.query();
+    res.status(200).json(resources);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+// @route   GET /api/resource/:id/show
+// @desc    Show Specific Resource
+// @access  Private
+const getResource = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const resource = await Resources.query().findById(id);
+    if (!resource) {
+      return res.status(404).json({ message: "Resource not found!" });
+    }
+    res.status(200).json(resource);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+// @route   DELETE /api/resource/:id/delete
+// @desc    Delete Specific Resource
+// @access  Private
+const deleteResource = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const resource = await Resources.query().deleteById(id);
+    if (!resource) {
+      return res.status(404).json({ message: "Resource not found!" });
+    }
+    res.status(200).json({ message: "Resource deleted successfully!" });
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+// @route   PUT /api/resource/:id/update
+// @desc    Update The Resource
+// @access  Private
+const updateResource = async (req, res) => {
+  const id = req.params.id;
+  const { title, description, type } = req.body;
+  const files = req.files;
+
+  if (!title || !description) {
+    return res
+      .status(400)
+      .json({ message: "Please enter all fields!", success: false });
+  }
+
+  const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+
+  if (!files) {
+    return res
+      .status(400)
+      .json({ message: "Please select an file!", success: false });
+  }
+
+  const thumbnail = `${basePath}${files.thumbnail[0].filename}`;
+
+  if (!thumbnail) {
+    return res
+      .status(400)
+      .json({ message: "Please select an image!", success: false });
+  }
+
+  const video = files.video
+    ? files.video.map((file) => `${basePath}${file.filename}`)
+    : "";
+  const pdf = files.pdf
+    ? files.pdf.map((file) => `${basePath}${file.filename}`)
+    : "";
+
+  try {
+    const resource = await Resources.query().findById(id).patch({
+      title: title,
+      description: description,
+      thumbnail: thumbnail[0],
+      video: video,
+      pdf: pdf[0],
+      type: type,
+    });
+
+    res.status(200).json(resource);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+module.exports = {
+  createResource,
+  getResources,
+  getResource,
+  deleteResource,
+  updateResource,
+};

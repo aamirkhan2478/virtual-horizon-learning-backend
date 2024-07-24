@@ -2,6 +2,8 @@ const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const userRouter = require("./src/routes/user.routes.js");
+const resourceRouter = require("./src/routes/resource.routes.js");
+const auth = require("./src/middlewares/auth.middleware.js");
 const {
   errorHandler,
   notFound,
@@ -46,6 +48,7 @@ app.get("/", (_req, res) => {
 
 // Routes
 app.use("/api/user", userRouter);
+app.use("/api/resource", auth, resourceRouter);
 
 app.use(notFound);
 app.use(errorHandler);
