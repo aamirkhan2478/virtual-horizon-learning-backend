@@ -155,7 +155,7 @@ const login = async (req, res) => {
 
     const userWithOutPass = await User.query()
       .findById(user.id)
-      .select("id", "name", "email", "userType", "phoneNumber");
+      .select("id", "name", "email", "userType", "phoneNumber", "pic");
 
     // return success response
     return res.status(200).json({

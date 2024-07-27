@@ -1,11 +1,13 @@
 const Resources = require("../models/resources.model");
+const User = require("../models/user.model");
+const UserResource = require("../models/user_resources.model");
 
 // @route   POST /api/resource/create
 // @desc    Create New Resource
 // @access  Private
 const createResource = async (req, res) => {
   // Get data from request body
-  const { title, description, type } = req.body;
+  const { title, description, type, price } = req.body;
 
   // Get files from request
   const files = req.files;
@@ -63,6 +65,7 @@ const createResource = async (req, res) => {
       videos: videos.length ? JSON.stringify(videos) : [],
       pdf: pdf.length ? pdf[0] : "",
       type: type,
+      price: price,
     });
 
     res.status(201).json(resource);
@@ -120,7 +123,7 @@ const deleteResource = async (req, res) => {
 // @access  Private
 const updateResource = async (req, res) => {
   const id = req.params.id;
-  const { title, description, type } = req.body;
+  const { title, description, type, price } = req.body;
   const files = req.files;
 
   if (!title || !description) {
@@ -160,9 +163,45 @@ const updateResource = async (req, res) => {
       video: video,
       pdf: pdf[0],
       type: type,
+      price: price,
     });
 
     res.status(200).json(resource);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+// @route   POST /api/resource/assign
+// @desc    Assign Resource By Teacher User
+// @access  Private
+const assignResource = async (req, res) => {
+  const { userId, resourceId } = req.body;
+
+  if (!userId || !resourceId) {
+    return res
+      .status(400)
+      .json({ message: "Please enter all fields!", success: false });
+  }
+
+  try {
+    const user = await User.query().findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+
+    const resource = await Resources.query().findById(resourceId);
+    if (!resource) {
+      return res.status(404).json({ message: "Resource not found!" });
+    }
+
+    const userResource = await UserResource.query().insert({
+      userId: userId,
+      resourceId: resourceId,
+      isAssigned: true,
+    });
+
+    res.status(201).json(userResource);
   } catch (err) {
     res.status(400).json(err);
   }
@@ -174,4 +213,5 @@ module.exports = {
   getResource,
   deleteResource,
   updateResource,
+  assignResource,
 };

@@ -43,6 +43,23 @@ class User extends Model {
     };
   }
 
+  static get relationMappings() {
+    return {
+      resources: {
+        relation: Model.ManyToManyRelation,
+        modelClass: require('./resources.model'),
+        join: {
+          from: 'users.id',
+          through: {
+            from: 'user_resources.userId',
+            to: 'user_resources.resourceId'
+          },
+          to: 'resources.id'
+        }
+      }
+    };
+  }
+
   async $beforeInsert() {
     await this.hashPassword();
   }

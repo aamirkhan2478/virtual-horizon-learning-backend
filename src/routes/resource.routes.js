@@ -6,6 +6,7 @@ const {
   getResource,
   deleteResource,
   updateResource,
+  assignResource
 } = require("../controllers/resources.controllers.js");
 
 const router = express.Router();
@@ -23,5 +24,6 @@ router.get("/all", getResources);
 router.get("/:id/show", getResource);
 router.delete("/:id/delete", deleteResource);
 router.put("/:id/update", updateResource);
+router.post("/assign", assignResource);
 
 module.exports = router;
