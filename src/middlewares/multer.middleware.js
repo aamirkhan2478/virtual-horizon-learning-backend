@@ -1,4 +1,6 @@
 const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
 
 const FILE_TYPE_MAP = {
   "application/pdf": "pdf",
@@ -20,7 +22,9 @@ const storage = multer.diskStorage({
     if (isValid) {
       uploadError = null;
     }
-    cb(uploadError, "public/uploads");
+    const uploadFolder = path.join(__dirname, "../../public/uploads");
+    fs.mkdirSync(uploadFolder, { recursive: true }); // Create the folder if it doesn't exist
+    cb(uploadError, uploadFolder);
   },
   filename: function (_req, file, cb) {
     const fileName = file.originalname.split(" ").join("-");
