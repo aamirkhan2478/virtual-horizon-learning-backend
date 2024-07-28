@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
@@ -8,14 +9,10 @@ const {
   errorHandler,
   notFound,
 } = require("./src/middlewares/error.middleware.js");
-const dotenv = require("dotenv");
 const db = require("./src/database/db.js");
 
 // Initialize database
 db();
-
-// Config environment variables
-dotenv.config();
 
 // Initialize express
 const app = express();

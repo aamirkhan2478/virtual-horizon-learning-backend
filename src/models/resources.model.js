@@ -18,7 +18,7 @@ class Resources extends Model {
           type: "string",
           enum: ["Video", "PDF"],
         },
-        videos: { type: "array", items: { type: "string" } },
+        videos: { type: "string" },
         pdf: { type: "string" },
         price: { type: "number" },
       },

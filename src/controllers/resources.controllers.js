@@ -1,6 +1,8 @@
+const Payment = require("../models/payment.model");
 const Resources = require("../models/resources.model");
 const User = require("../models/user.model");
 const UserResource = require("../models/user_resources.model");
+const stripe = require("../utils/stripe.utils");
 
 // @route   POST /api/resource/create
 // @desc    Create New Resource
@@ -48,8 +50,8 @@ const createResource = async (req, res) => {
   const videos = [];
   const pdf = [];
   if (type === "Video") {
-    if (files.video) {
-      files.video.map((file) => videos.push(`${basePath}${file.filename}`));
+    if (files.videos) {
+      files.videos.map((file) => videos.push(`${basePath}${file.filename}`));
     }
   } else {
     if (files.pdf) {
@@ -57,12 +59,13 @@ const createResource = async (req, res) => {
     }
   }
 
+  console.log(videos);
   try {
     const resource = await Resources.query().insert({
       title: title,
       description: description,
       thumbnail: thumbnail[0],
-      videos: videos.length ? JSON.stringify(videos) : [],
+      videos: videos.length ? JSON.stringify(videos) : "",
       pdf: pdf.length ? pdf[0] : "",
       type: type,
       price: price,
@@ -207,6 +210,75 @@ const assignResource = async (req, res) => {
   }
 };
 
+// @route   POST /api/resource/payment
+// @desc    Payment Gateway
+// @access  Private
+const makePayment = async (req, res) => {
+  const { userId, resourceId, amount } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "pkr",
+            product_data: {
+              name: `Resource ${resourceId}`,
+              metadata: { userId, resourceId },
+            },
+            unit_amount: amount * 100, // amount in cents
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${
+        process.env.CLIENT_URL_PRODUCTION || process.env.CLIENT_URL_DEVELOPMENT
+      }/dashboard/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${
+        process.env.CLIENT_URL_PRODUCTION || process.env.CLIENT_URL_DEVELOPMENT
+      }/dashboard/cancel`,
+    });
+
+    res.status(200).json({ id: session.id, data: session });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
+
+// @route   POST /api/resource/session/:id
+// @desc    Payment Gateway
+// @access  Private
+const getSession = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(id);
+
+    // // Store all the data in the database
+    // await Payment.query().insert({
+    //   paymentIntentId: session.payment_intent,
+    //   status: session.payment_status,
+    //   amount: session.amount_total,
+    //   currency: session.currency,
+    //   userId: session.metadata.userId,
+    //   resourceId: session.metadata.resourceId,
+    // });
+
+    // // Assign the resource to the user
+    // await UserResource.query().insert({
+    //   userId: session.metadata.userId,
+    //   resourceId: session.metadata.resourceId,
+    //   isBuyer: true,
+    // });
+
+    res.status(200).json(session);
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
+
 module.exports = {
   createResource,
   getResources,
@@ -214,4 +286,6 @@ module.exports = {
   deleteResource,
   updateResource,
   assignResource,
+  makePayment,
+  getSession,
 };
