@@ -288,7 +288,17 @@ const getSession = async (req, res) => {
       return res.status(404).json({ message: "Payment not found!" });
     }
 
-    // Assign the resource to the user
+    // check if user already buy resource
+    const checkResource = await UserResource.query().where({
+      userId: Number(session.metadata.userId),
+      resourceId: Number(session.metadata.resourceId),
+    });
+
+    if (checkResource.length) {
+      return res.status(400).json({ message: "Resource already bought!" });
+    }
+
+    // User Buy the resource
     const userResource = await UserResource.query().insert({
       userId: Number(session.metadata.userId),
       resourceId: Number(session.metadata.resourceId),
