@@ -47,16 +47,24 @@ class User extends Model {
     return {
       resources: {
         relation: Model.ManyToManyRelation,
-        modelClass: require('./resources.model'),
+        modelClass: require("./resources.model"),
         join: {
-          from: 'users.id',
+          from: "users.id",
           through: {
-            from: 'user_resources.userId',
-            to: 'user_resources.resourceId'
+            from: "user_resources.userId",
+            to: "user_resources.resourceId",
           },
-          to: 'resources.id'
-        }
-      }
+          to: "resources.id",
+        },
+      },
+      payments: {
+        relation: Model.HasManyRelation,
+        modelClass: require("./payment.model"),
+        join: {
+          from: "users.id",
+          to: "payments.userId",
+        },
+      },
     };
   }
 

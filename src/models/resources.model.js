@@ -39,7 +39,16 @@ class Resources extends Model {
           to: "users.id",
         },
       },
+      payments:{
+        relation: Model.HasManyRelation,
+        modelClass: require("./payment.model"),
+        join: {
+          from: "resources.id",
+          to: "payments.resourceId"
+        }
+      }
     };
+
   }
 }
 

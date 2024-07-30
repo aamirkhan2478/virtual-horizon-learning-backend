@@ -95,10 +95,27 @@ const getResources = async (req, res) => {
 const getResource = async (req, res) => {
   const id = req.params.id;
   try {
+    // Show the resource
     const resource = await Resources.query().findById(id);
+
+    // Check if resource is not available
     if (!resource) {
       return res.status(404).json({ message: "Resource not found!" });
     }
+
+    // show isAssigned and isBuyer
+    const userResource = await UserResource.query()
+      .where("resourceId", id)
+      .andWhere("userId", req.user.id)
+      .first();
+
+    userResource
+      ? (resource["isAssigned"] = userResource.isAssigned)
+      : (resource["isAssigned"] = false);
+    userResource
+      ? (resource["isBuyer"] = userResource.isBuyer)
+      : (resource["isBuyer"] = false);
+
     res.status(200).json(resource);
   } catch (err) {
     res.status(400).json(err);
@@ -179,16 +196,16 @@ const updateResource = async (req, res) => {
 // @desc    Assign Resource By Teacher User
 // @access  Private
 const assignResource = async (req, res) => {
-  const { userId, resourceId } = req.body;
+  const { resourceId } = req.body;
 
-  if (!userId || !resourceId) {
+  if (!resourceId) {
     return res
       .status(400)
       .json({ message: "Please enter all fields!", success: false });
   }
 
   try {
-    const user = await User.query().findById(userId);
+    const user = await User.query().findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found!" });
     }
@@ -199,7 +216,7 @@ const assignResource = async (req, res) => {
     }
 
     const userResource = await UserResource.query().insert({
-      userId: userId,
+      userId: req.user.id,
       resourceId: resourceId,
       isAssigned: true,
     });
@@ -214,7 +231,7 @@ const assignResource = async (req, res) => {
 // @desc    Payment Gateway
 // @access  Private
 const makePayment = async (req, res) => {
-  const { userId, resourceId, amount } = req.body;
+  const { resourceId, amount } = req.body;
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -225,13 +242,14 @@ const makePayment = async (req, res) => {
             currency: "pkr",
             product_data: {
               name: `Resource ${resourceId}`,
-              metadata: { userId, resourceId },
+              metadata: { userId: req.user.id, resource: resourceId },
             },
-            unit_amount: amount * 100, // amount in cents
+            unit_amount: amount * 100, // amount in paisa
           },
           quantity: 1,
         },
       ],
+      metadata: { userId: req.user.id, resourceId: resourceId },
       mode: "payment",
       success_url: `${
         process.env.CLIENT_URL_PRODUCTION || process.env.CLIENT_URL_DEVELOPMENT
@@ -257,21 +275,29 @@ const getSession = async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(id);
 
     // // Store all the data in the database
-    // await Payment.query().insert({
-    //   paymentIntentId: session.payment_intent,
-    //   status: session.payment_status,
-    //   amount: session.amount_total,
-    //   currency: session.currency,
-    //   userId: session.metadata.userId,
-    //   resourceId: session.metadata.resourceId,
-    // });
+    const payment = await Payment.query().insert({
+      paymentIntentId: String(session.payment_intent),
+      status: session.payment_status,
+      amount: session.amount_total,
+      currency: session.currency,
+      userId: Number(session.metadata.userId),
+      resourceId: Number(session.metadata.resourceId),
+    });
 
-    // // Assign the resource to the user
-    // await UserResource.query().insert({
-    //   userId: session.metadata.userId,
-    //   resourceId: session.metadata.resourceId,
-    //   isBuyer: true,
-    // });
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found!" });
+    }
+
+    // Assign the resource to the user
+    const userResource = await UserResource.query().insert({
+      userId: Number(session.metadata.userId),
+      resourceId: Number(session.metadata.resourceId),
+      isBuyer: true,
+    });
+
+    if (!userResource) {
+      return res.status(404).json({ message: "User Resource not found!" });
+    }
 
     res.status(200).json(session);
   } catch (error) {
