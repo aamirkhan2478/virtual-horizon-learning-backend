@@ -59,7 +59,6 @@ const createResource = async (req, res) => {
     }
   }
 
-  console.log(videos);
   try {
     const resource = await Resources.query().insert({
       title: title,
@@ -80,7 +79,7 @@ const createResource = async (req, res) => {
 // @route   GET /api/resource/all
 // @desc    Show All Resources
 // @access  Private
-const getResources = async (req, res) => {
+const getResources = async (_, res) => {
   try {
     const resources = await Resources.query();
     res.status(200).json(resources);
@@ -215,6 +214,21 @@ const assignResource = async (req, res) => {
       return res.status(404).json({ message: "Resource not found!" });
     }
 
+    // if user is not teacher
+    if (user.role !== "teacher") {
+      return res.status(400).json({ message: "User is not a teacher!" });
+    }
+
+    // if teacher already assign resource
+    const checkResource = await UserResource.query().where({
+      userId: req.user.id,
+      resourceId: resourceId,
+    });
+
+    if (checkResource.length) {
+      return res.status(400).json({ message: "Resource already assigned!" });
+    }
+
     const userResource = await UserResource.query().insert({
       userId: req.user.id,
       resourceId: resourceId,
@@ -288,7 +302,7 @@ const getSession = async (req, res) => {
       return res.status(404).json({ message: "Payment not found!" });
     }
 
-    // check if user already buy resource
+    // if user already buy resource
     const checkResource = await UserResource.query().where({
       userId: Number(session.metadata.userId),
       resourceId: Number(session.metadata.resourceId),
