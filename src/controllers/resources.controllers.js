@@ -81,7 +81,14 @@ const createResource = async (req, res) => {
 // @access  Private
 const getResources = async (_, res) => {
   try {
+    // Show all resources
     const resources = await Resources.query();
+
+    // Check if resources are not available
+    if (!resources) {
+      return res.status(404).json({ message: "Resources not found" });
+    }
+
     res.status(200).json(resources);
   } catch (err) {
     res.status(400).json(err);
@@ -115,6 +122,7 @@ const getResource = async (req, res) => {
       ? (resource["isBuyer"] = userResource.isBuyer)
       : (resource["isBuyer"] = false);
 
+    // response the resource
     res.status(200).json(resource);
   } catch (err) {
     res.status(400).json(err);
@@ -125,12 +133,18 @@ const getResource = async (req, res) => {
 // @desc    Delete Specific Resource
 // @access  Private
 const deleteResource = async (req, res) => {
+  // Get id from request params
   const id = req.params.id;
   try {
+    // Delete the resource
     const resource = await Resources.query().deleteById(id);
+
+    // Check if resource is not available
     if (!resource) {
       return res.status(404).json({ message: "Resource not found!" });
     }
+
+    // response the message
     res.status(200).json({ message: "Resource deleted successfully!" });
   } catch (err) {
     res.status(400).json(err);
@@ -141,32 +155,43 @@ const deleteResource = async (req, res) => {
 // @desc    Update The Resource
 // @access  Private
 const updateResource = async (req, res) => {
+  // Get id from request params
   const id = req.params.id;
+
+  // Get data from request body
   const { title, description, type, price } = req.body;
+
+  // Get files from request
   const files = req.files;
 
-  if (!title || !description) {
+  // Check if fields are not empty
+  if (!title || !description || !type || !price) {
     return res
       .status(400)
       .json({ message: "Please enter all fields!", success: false });
   }
 
+  // https://domainname.com/uploads/filename-dfse3453ds.jpeg
   const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
 
+  // Check if files are available
   if (!files) {
     return res
       .status(400)
       .json({ message: "Please select an file!", success: false });
   }
 
+  // Get thumbnail image
   const thumbnail = `${basePath}${files.thumbnail[0].filename}`;
 
+  // Thumbnail is required
   if (!thumbnail) {
     return res
       .status(400)
       .json({ message: "Please select an image!", success: false });
   }
 
+  // Check if video or pdf files are available
   const video = files.video
     ? files.video.map((file) => `${basePath}${file.filename}`)
     : "";
@@ -175,16 +200,20 @@ const updateResource = async (req, res) => {
     : "";
 
   try {
-    const resource = await Resources.query().findById(id).patch({
-      title: title,
-      description: description,
-      thumbnail: thumbnail[0],
-      video: video,
-      pdf: pdf[0],
-      type: type,
-      price: price,
-    });
+    // Update the resource
+    const resource = await Resources.query()
+      .findById(id)
+      .patch({
+        title: title,
+        description: description,
+        thumbnail: thumbnail[0],
+        video: video,
+        pdf: pdf[0],
+        type: type,
+        price: parseFloat(price),
+      });
 
+    // response the resource
     res.status(200).json(resource);
   } catch (err) {
     res.status(400).json(err);
@@ -195,8 +224,10 @@ const updateResource = async (req, res) => {
 // @desc    Assign Resource By Teacher User
 // @access  Private
 const assignResource = async (req, res) => {
+  // Get resourceId from request body
   const { resourceId } = req.body;
 
+  // Check if fields are not empty
   if (!resourceId) {
     return res
       .status(400)
@@ -204,12 +235,18 @@ const assignResource = async (req, res) => {
   }
 
   try {
+    // Get user from database
     const user = await User.query().findById(req.user.id);
+
+    // Check if user is not available
     if (!user) {
       return res.status(404).json({ message: "User not found!" });
     }
 
+    // Get resource from database
     const resource = await Resources.query().findById(resourceId);
+
+    // Check if resource is not available
     if (!resource) {
       return res.status(404).json({ message: "Resource not found!" });
     }
@@ -219,22 +256,25 @@ const assignResource = async (req, res) => {
       return res.status(400).json({ message: "User is not a teacher!" });
     }
 
-    // if teacher already assign resource
+    // Get user resource from database
     const checkResource = await UserResource.query().where({
       userId: req.user.id,
       resourceId: resourceId,
     });
 
+    // if teacher already assign resource
     if (checkResource.length) {
       return res.status(400).json({ message: "Resource already assigned!" });
     }
 
+    // Assign the resource
     const userResource = await UserResource.query().insert({
       userId: req.user.id,
       resourceId: resourceId,
       isAssigned: true,
     });
 
+    // response the user resource
     res.status(201).json(userResource);
   } catch (err) {
     res.status(400).json(err);
@@ -245,13 +285,18 @@ const assignResource = async (req, res) => {
 // @desc    Payment Gateway
 // @access  Private
 const makePayment = async (req, res) => {
+  // Get resourceId and amount from request body
   const { resourceId, amount } = req.body;
 
   try {
+    // Create a new session
     const session = await stripe.checkout.sessions.create({
+      // Payment Gateway
       payment_method_types: ["card"],
+      // Line Items
       line_items: [
         {
+          // Resource Name and Price in paisa (100 paisa = 1 rupee)
           price_data: {
             currency: "pkr",
             product_data: {
@@ -263,7 +308,11 @@ const makePayment = async (req, res) => {
           quantity: 1,
         },
       ],
+
+      // Metadata for the session
       metadata: { userId: req.user.id, resourceId: resourceId },
+
+      // Success and Cancel URL
       mode: "payment",
       success_url: `${
         process.env.CLIENT_URL_PRODUCTION || process.env.CLIENT_URL_DEVELOPMENT
@@ -273,6 +322,7 @@ const makePayment = async (req, res) => {
       }/dashboard/cancel`,
     });
 
+    // response the session
     res.status(200).json({ id: session.id, data: session });
   } catch (error) {
     res.status(500).send({ error: error.message });
@@ -283,12 +333,14 @@ const makePayment = async (req, res) => {
 // @desc    Payment Gateway
 // @access  Private
 const getSession = async (req, res) => {
+  // Get id from request params
   const { id } = req.params;
 
   try {
+    // Retrieve the session
     const session = await stripe.checkout.sessions.retrieve(id);
 
-    // // Store all the data in the database
+    // Store all the data in the database
     const payment = await Payment.query().insert({
       paymentIntentId: String(session.payment_intent),
       status: session.payment_status,
@@ -298,16 +350,18 @@ const getSession = async (req, res) => {
       resourceId: Number(session.metadata.resourceId),
     });
 
+    // Check if payment is not available
     if (!payment) {
       return res.status(404).json({ message: "Payment not found!" });
     }
 
-    // if user already buy resource
+    // Get user resource from database
     const checkResource = await UserResource.query().where({
       userId: Number(session.metadata.userId),
       resourceId: Number(session.metadata.resourceId),
     });
 
+    // if user already buy resource
     if (checkResource.length) {
       return res.status(400).json({ message: "Resource already bought!" });
     }
@@ -319,10 +373,12 @@ const getSession = async (req, res) => {
       isBuyer: true,
     });
 
+    // Check if user resource is not available
     if (!userResource) {
       return res.status(404).json({ message: "User Resource not found!" });
     }
 
+    // response the session
     res.status(200).json(session);
   } catch (error) {
     res.status(500).send({ error: error.message });
@@ -334,9 +390,17 @@ const getSession = async (req, res) => {
 // @access  Private
 const getUserResources = async (req, res) => {
   try {
+    /* 
+      Get user resources from database 
+      using join query with user_resources 
+      table and resources table using userId 
+      and resourceId as foreign key
+    */
     const resources = await Resources.query()
       .join("user_resources", "resources.id", "user_resources.resourceId")
       .where("user_resources.userId", req.user.id);
+
+    // response the resources
     res.status(200).json(resources);
   } catch (err) {
     res.status(400).json(err);
