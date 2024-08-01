@@ -15,7 +15,7 @@ const createResource = async (req, res) => {
   const files = req.files;
 
   // Check if fields are not empty
-  if (!title || !description) {
+  if (!title || !description || !type || !price) {
     return res
       .status(400)
       .json({ message: "Please enter all fields!", success: false });
@@ -68,7 +68,7 @@ const createResource = async (req, res) => {
       videos: videos.length ? JSON.stringify(videos) : "",
       pdf: pdf.length ? pdf[0] : "",
       type: type,
-      price: price,
+      price: parseFloat(price),
     });
 
     res.status(201).json(resource);
@@ -315,6 +315,20 @@ const getSession = async (req, res) => {
   }
 };
 
+// @route   POST /api/resource/user-resources
+// @desc    Show User Resources
+// @access  Private
+const getUserResources = async (req, res) => {
+  try {
+    const resources = await Resources.query()
+      .join("user_resources", "resources.id", "user_resources.resourceId")
+      .where("user_resources.userId", req.user.id);
+    res.status(200).json(resources);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
 module.exports = {
   createResource,
   getResources,
@@ -324,4 +338,5 @@ module.exports = {
   assignResource,
   makePayment,
   getSession,
+  getUserResources,
 };
