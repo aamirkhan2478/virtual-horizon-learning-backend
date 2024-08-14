@@ -9,9 +9,9 @@ module.exports = {
   development: {
     client: "postgresql",
     connection: {
-      database: "e_learning",
-      user: "aamir",
-      password: "2244",
+      database: "e_learning_db",
+      user: "e_learning_user",
+      password: "12345",
     },
     pool: {
       min: 2,
