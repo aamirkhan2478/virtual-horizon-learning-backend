@@ -47,11 +47,15 @@ const createResource = async (req, res) => {
   }
 
   // Check if video or pdf files are available
-  const videos = [];
+  let videos = "";
   const pdf = [];
   if (type === "Video") {
     if (files.videos) {
-      files.videos.map((file) => videos.push(`${basePath}${file.filename}`));
+      files.videos.map((file) => {
+        videos.length
+          ? (videos += `,${basePath}${file.filename}`)
+          : (videos += `${basePath}${file.filename}`);
+      });
     }
   } else {
     if (files.pdf) {
@@ -64,7 +68,7 @@ const createResource = async (req, res) => {
       title: title,
       description: description,
       thumbnail: thumbnail[0],
-      videos: videos.length ? JSON.stringify(videos) : "",
+      videos: videos.length ? videos : "",
       pdf: pdf.length ? pdf[0] : "",
       type: type,
       price: parseFloat(price),
@@ -122,6 +126,17 @@ const getResource = async (req, res) => {
       ? (resource["isBuyer"] = userResource.isBuyer)
       : (resource["isBuyer"] = false);
 
+    // show assign teacher name and email if resource is assigned
+    if (resource.isAssigned) {
+      const assignTeacher = await User.query()
+        .join("user_resources", "users.id", "user_resources.userId")
+        .where("user_resources.resourceId", id)
+        .andWhere("users.userType", "Teacher")
+        .first();
+
+      resource["assignTeacher"] = assignTeacher.name;
+      resource["assignTeacherEmail"] = assignTeacher.email;
+    }
     // response the resource
     res.status(200).json(resource);
   } catch (err) {
@@ -252,7 +267,7 @@ const assignResource = async (req, res) => {
     }
 
     // if user is not teacher
-    if (user.role !== "teacher") {
+    if (user.userType !== "Teacher") {
       return res.status(400).json({ message: "User is not a teacher!" });
     }
 
