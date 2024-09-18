@@ -126,17 +126,15 @@ const getResource = async (req, res) => {
       ? (resource["isBuyer"] = userResource.isBuyer)
       : (resource["isBuyer"] = false);
 
-    // show assign teacher name and email if resource is assigned
-    if (resource.isAssigned) {
-      const assignTeacher = await User.query()
-        .join("user_resources", "users.id", "user_resources.userId")
-        .where("user_resources.resourceId", id)
-        .andWhere("users.userType", "Teacher")
-        .first();
+    const assignTeacher = await User.query()
+      .join("user_resources", "users.id", "user_resources.userId")
+      .where("user_resources.resourceId", id)
+      .andWhere("users.userType", "Teacher")
+      .first();
 
-      resource["assignTeacher"] = assignTeacher.name;
-      resource["assignTeacherEmail"] = assignTeacher.email;
-    }
+    resource["assignTeacher"] = assignTeacher.name;
+    resource["assignTeacherEmail"] = assignTeacher.email;
+
     // response the resource
     res.status(200).json(resource);
   } catch (err) {

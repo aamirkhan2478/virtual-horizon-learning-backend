@@ -14,6 +14,7 @@ const cors = require("cors");
 const userRouter = require("./src/routes/user.routes.js");
 const resourceRouter = require("./src/routes/resource.routes.js");
 const notificationRouter = require("./src/routes/notification.routes.js");
+const meetingRouter = require("./src/routes/meeting.routes.js");
 
 // import auth middleware for authentication
 const auth = require("./src/middlewares/auth.middleware.js");
@@ -48,7 +49,6 @@ app.use(
       process.env.CLIENT_URL_DEVELOPMENT,
       process.env.CLIENT_URL_PRODUCTION,
     ],
-    credentials: true,
   })
 );
 
@@ -61,6 +61,7 @@ app.get("/", (_req, res) => {
 app.use("/api/user", userRouter);
 app.use("/api/resource", auth, resourceRouter);
 app.use("/api/notification", auth, notificationRouter);
+app.use("/api/meeting", auth, meetingRouter);
 
 app.use(notFound);
 app.use(errorHandler);
