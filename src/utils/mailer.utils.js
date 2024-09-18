@@ -36,6 +36,7 @@ const sendEmail = async ({
         break;
     }
 
+    // Create transporter
     let transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
@@ -45,9 +46,7 @@ const sendEmail = async ({
       },
     });
 
-    // Date format: September 9th 2021, 3:00:00 pm
-    // moment(meetingDate).format("MMMM Do YYYY, h:mm:ss a")
-
+    // Create mail options
     let mailOptions = {
       from: {
         name: "Virtual Horizon Learning",
@@ -81,14 +80,18 @@ const sendEmail = async ({
       <p>Click <a href="${meetingLink}">here</a> to join your meeting</p>`,
     };
 
+    // Send mail
     const mailResponse = await transporter.sendMail(mailOptions);
 
+    // Return mail response
     return mailResponse;
   } catch (error) {
+    // Throw error if any occurs
     throw new Error(error.message);
   }
 };
 
+//  Export the module
 module.exports = {
   sendEmail,
 };

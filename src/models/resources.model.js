@@ -1,10 +1,12 @@
 const { Model } = require("objection");
 
 class Resources extends Model {
+  // Table name is the only required property.
   static get tableName() {
     return "resources";
   }
 
+  // This object defines the relations to other models.
   static get jsonSchema() {
     return {
       type: "object",
@@ -25,6 +27,7 @@ class Resources extends Model {
     };
   }
 
+  // This object defines the relations to other models.
   static get relationMappings() {
     return {
       users: {
@@ -39,16 +42,15 @@ class Resources extends Model {
           to: "users.id",
         },
       },
-      payments:{
+      payments: {
         relation: Model.HasManyRelation,
         modelClass: require("./payment.model"),
         join: {
           from: "resources.id",
-          to: "payments.resourceId"
-        }
-      }
+          to: "payments.resourceId",
+        },
+      },
     };
-
   }
 }
 

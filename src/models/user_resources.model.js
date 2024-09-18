@@ -1,14 +1,17 @@
 const { Model } = require("objection");
 
 class UserResource extends Model {
+  // Table name is the only required property.
   static get tableName() {
     return "user_resources";
   }
 
+  // This object defines the relations to other models.
   static get idColumn() {
     return "id";
   }
 
+  // This object defines the relations to other models.
   static get jsonSchema() {
     return {
       type: "object",
@@ -24,6 +27,7 @@ class UserResource extends Model {
     };
   }
 
+  // This object defines the relations to other models.
   static get relationMappings() {
     const User = require("./user.model");
     const Resource = require("./resources.model");

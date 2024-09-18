@@ -1,10 +1,12 @@
 const { Model } = require("objection");
 
 class Payment extends Model {
+  // Table name is the only required property.
   static get tableName() {
     return "payments";
   }
 
+  // This object defines the relations to other models.
   static get jsonSchema() {
     return {
       type: "object",
@@ -21,6 +23,7 @@ class Payment extends Model {
     };
   }
 
+  // This object defines the relations to other models.
   static get relationMappings() {
     const User = require("./user.model");
     const Resource = require("./resources.model");

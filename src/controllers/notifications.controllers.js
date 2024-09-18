@@ -108,6 +108,8 @@ const clearNotifications = async (_req, res) => {
 const updateNotificationStatus = async (req, res) => {
   // Get notification id from request parameters
   const { id } = req.params;
+
+  // Get status from request body
   const { status } = req.body;
 
   // Check if status is match with enum values

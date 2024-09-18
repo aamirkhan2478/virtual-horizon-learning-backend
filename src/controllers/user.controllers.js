@@ -6,14 +6,17 @@ const bcrypt = require("bcryptjs");
 // @desc    Register new user
 // @access  Public
 const register = async (req, res) => {
+  // Get user details from request body
   const { name, email, password, userType, phoneNumber } = req.body;
 
+  // Check if all fields are available
   if (!name || !email || !password || !userType || !phoneNumber) {
     return res
       .status(400)
       .json({ message: "All fields are required", success: false });
   }
 
+  // Check if password is valid
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&#_])[A-Za-z\d$@$!%*?&#_]{8,}$/;
   if (!passwordRegex.test(password)) {
@@ -24,6 +27,7 @@ const register = async (req, res) => {
     });
   }
 
+  // Check if email is valid
   const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9-]+\.[A-Z]{2,4}$/i;
   if (!emailRegex.test(email)) {
     return res
@@ -31,6 +35,7 @@ const register = async (req, res) => {
       .json({ message: "Email is not valid", success: false });
   }
 
+  // Check if user type is valid
   const userTypes = ["Admin", "Teacher", "Student", "Parent"];
   if (!userTypes.includes(userType)) {
     return res
@@ -39,6 +44,7 @@ const register = async (req, res) => {
   }
 
   try {
+    // Check if user already exists
     const userExists = await User.query().findOne({ email });
     if (userExists) {
       return res
@@ -46,6 +52,7 @@ const register = async (req, res) => {
         .json({ message: "User already exists", success: false });
     }
 
+    // Add user to database
     const user = await User.query().insert({
       name,
       email,
@@ -54,18 +61,22 @@ const register = async (req, res) => {
       phoneNumber,
     });
 
+    // Send verification email
     await sendEmail({ email, emailType: "verify", userId: user.id });
 
+    // Get user details without password
     const userWithOutPass = await User.query()
       .findById(user.id)
       .select("id", "name", "email", "userType", "phoneNumber");
 
+    // return success response
     return res.status(201).json({
       message: "Registered Successfully",
       success: true,
       user: userWithOutPass,
     });
   } catch (error) {
+    // return error response
     return res.status(500).json({
       message: error.message,
       success: false,
@@ -77,8 +88,10 @@ const register = async (req, res) => {
 // @desc    Verify user email
 // @access  Public
 const verifyEmail = async (req, res) => {
+  // Get token from request body
   const { token } = req.body;
 
+  // Check if token is available
   if (!token) {
     return res.status(400).json({ message: "Invalid token", success: false });
   }
@@ -104,10 +117,12 @@ const verifyEmail = async (req, res) => {
       verifyTokenExpiry: null,
     });
 
+    // return success response
     return res
       .status(200)
       .json({ message: "Email verified successfully", success: true });
   } catch (error) {
+    // return error response
     return res.status(500).json({ message: error.message });
   }
 };
@@ -116,8 +131,10 @@ const verifyEmail = async (req, res) => {
 // @desc    Login user
 // @access  Public
 const login = async (req, res) => {
+  // Get email and password from request body
   const { email, password } = req.body;
 
+  // Check if email and password are available
   if (!email || !password) {
     return res
       .status(400)
@@ -153,6 +170,7 @@ const login = async (req, res) => {
     // Generate access token
     const token = user.generateAccessToken();
 
+    // Get user details without password
     const userWithOutPass = await User.query()
       .findById(user.id)
       .select("id", "name", "email", "userType", "phoneNumber", "pic");
@@ -165,6 +183,7 @@ const login = async (req, res) => {
       user: userWithOutPass,
     });
   } catch (error) {
+    // return error response
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -173,14 +192,17 @@ const login = async (req, res) => {
 // @desc    Forgot password
 // @access  Public
 const forgotPassword = async (req, res) => {
+  // Get email from request body
   const { email } = req.body;
 
+  // Check if email is available
   if (!email) {
     return res
       .status(400)
       .json({ message: "Email is required", success: false });
   }
 
+  // Check if email is valid
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) {
     return res
@@ -202,10 +224,12 @@ const forgotPassword = async (req, res) => {
     // send reset password email
     await sendEmail({ email, emailType: "reset", userId: user.id });
 
+    // return success response
     return res
       .status(200)
       .json({ message: "Reset link sent to email", success: true });
   } catch (error) {
+    // return error response
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -214,14 +238,17 @@ const forgotPassword = async (req, res) => {
 // @desc    Reset password
 // @access  Public
 const resetPassword = async (req, res) => {
+  // Get token and password from request body
   const { token, password } = req.body;
 
+  // Check if token and password are available
   if (!token || !password) {
     return res
       .status(400)
       .json({ message: "All fields are required", success: false });
   }
 
+  // Check if password is valid
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&#_])[A-Za-z\d$@$!%*?&#_]{8,}$/;
   if (!passwordRegex.test(password)) {
@@ -261,6 +288,7 @@ const resetPassword = async (req, res) => {
       .status(200)
       .json({ message: "Password reset successfully", success: true });
   } catch (error) {
+    // return error response
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -269,14 +297,17 @@ const resetPassword = async (req, res) => {
 // @desc    Change user password
 // @access  Private
 const changePassword = async (req, res) => {
+  // Get current password and new password from request body
   const { currentPassword, newPassword } = req.body;
 
+  // Check if all fields are available
   if (!currentPassword || !newPassword) {
     return res
       .status(400)
       .json({ message: "All fields are required", success: false });
   }
 
+  // Check if password is valid
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@$!%*?&#_])[A-Za-z\d$@$!%*?&#_]{8,}$/;
   if (!passwordRegex.test(newPassword)) {
@@ -291,6 +322,7 @@ const changePassword = async (req, res) => {
     // Find user by id
     const user = await User.query().findById(req.user.id);
 
+    // Check if user exists
     if (!user) {
       return res
         .status(400)
@@ -313,10 +345,12 @@ const changePassword = async (req, res) => {
       password: hashedPassword,
     });
 
+    // return success response
     return res
       .status(200)
       .json({ message: "Password changed successfully", success: true });
   } catch (error) {
+    // return error response
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -325,14 +359,17 @@ const changePassword = async (req, res) => {
 // @desc    Resend verification email
 // @access  Public
 const resendEmail = async (req, res) => {
+  // Get email from request body
   const { email } = req.body;
 
+  // Check if email is available
   if (!email) {
     return res
       .status(400)
       .json({ message: "Email is required", success: false });
   }
 
+  // Check if email is valid
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) {
     return res
@@ -361,10 +398,12 @@ const resendEmail = async (req, res) => {
     // send verification email
     await sendEmail({ email, emailType: "verify", userId: user.id });
 
+    // return success response
     return res
       .status(200)
       .json({ message: "Verification link sent to email", success: true });
   } catch (error) {
+    // return error response
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -409,6 +448,7 @@ const updateUser = async (req, res) => {
 // @desc    Update loggedIn user image
 // @access  Private
 const updateImage = async (req, res) => {
+  // Check if file is available
   const file = req.file;
 
   // https://domainname.com/uploads/filename-dfse3453ds.jpeg

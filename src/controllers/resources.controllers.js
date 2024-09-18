@@ -64,6 +64,7 @@ const createResource = async (req, res) => {
   }
 
   try {
+    // Create a new resource
     const resource = await Resources.query().insert({
       title: title,
       description: description,
@@ -74,9 +75,11 @@ const createResource = async (req, res) => {
       price: parseFloat(price),
     });
 
+    // response the resource
     res.status(201).json(resource);
   } catch (err) {
-    res.status(400).json(err);
+    // response the error
+    res.status(400).json({ error: err.message });
   }
 };
 
@@ -93,9 +96,11 @@ const getResources = async (_, res) => {
       return res.status(404).json({ message: "Resources not found" });
     }
 
+    // response the resources
     res.status(200).json(resources);
   } catch (err) {
-    res.status(400).json(err);
+    // response the error
+    res.status(400).json({ error: err.message });
   }
 };
 
@@ -103,6 +108,7 @@ const getResources = async (_, res) => {
 // @desc    Show Specific Resource
 // @access  Private
 const getResource = async (req, res) => {
+  // Get id from request params
   const id = req.params.id;
   try {
     // Show the resource
@@ -119,26 +125,34 @@ const getResource = async (req, res) => {
       .andWhere("userId", req.user.id)
       .first();
 
+    // Check if user resource isAssigned or not
     userResource
       ? (resource["isAssigned"] = userResource.isAssigned)
       : (resource["isAssigned"] = false);
+
+    // Check if user resource isBuyer or not
     userResource
       ? (resource["isBuyer"] = userResource.isBuyer)
       : (resource["isBuyer"] = false);
 
+    // Get assign teacher
     const assignTeacher = await User.query()
       .join("user_resources", "users.id", "user_resources.userId")
       .where("user_resources.resourceId", id)
       .andWhere("users.userType", "Teacher")
       .first();
 
+    // Check if assign teacher is not available
     resource["assignTeacher"] = assignTeacher.name;
+
+    // Check if assign teacher email is not available
     resource["assignTeacherEmail"] = assignTeacher.email;
 
     // response the resource
     res.status(200).json(resource);
   } catch (err) {
-    res.status(400).json(err);
+    // response the error
+    res.status(400).json({ error: err.message });
   }
 };
 
@@ -160,7 +174,8 @@ const deleteResource = async (req, res) => {
     // response the message
     res.status(200).json({ message: "Resource deleted successfully!" });
   } catch (err) {
-    res.status(400).json(err);
+    // response the error
+    res.status(400).json({ error: err.message });
   }
 };
 
@@ -229,7 +244,8 @@ const updateResource = async (req, res) => {
     // response the resource
     res.status(200).json(resource);
   } catch (err) {
-    res.status(400).json(err);
+    // response the error
+    res.status(400).json({ error: err.message });
   }
 };
 
@@ -290,7 +306,8 @@ const assignResource = async (req, res) => {
     // response the user resource
     res.status(201).json(userResource);
   } catch (err) {
-    res.status(400).json(err);
+    // response the error
+    res.status(400).json({ error: err.message });
   }
 };
 
@@ -338,6 +355,7 @@ const makePayment = async (req, res) => {
     // response the session
     res.status(200).json({ id: session.id, data: session });
   } catch (error) {
+    // response the error
     res.status(500).send({ error: error.message });
   }
 };
@@ -394,6 +412,7 @@ const getSession = async (req, res) => {
     // response the session
     res.status(200).json(session);
   } catch (error) {
+    // response the error
     res.status(500).send({ error: error.message });
   }
 };
@@ -416,7 +435,8 @@ const getUserResources = async (req, res) => {
     // response the resources
     res.status(200).json(resources);
   } catch (err) {
-    res.status(400).json(err);
+    // response the error
+    res.status(400).json({ error: { error: err.message } });
   }
 };
 

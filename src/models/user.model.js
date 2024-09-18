@@ -3,10 +3,12 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 class User extends Model {
+  // Table name is the only required property.
   static get tableName() {
     return "users";
   }
 
+  // This object defines the relations to other models.
   static get jsonSchema() {
     return {
       type: "object",
@@ -43,6 +45,7 @@ class User extends Model {
     };
   }
 
+  // This object defines the relations to other models.
   static get relationMappings() {
     return {
       resources: {
@@ -68,20 +71,24 @@ class User extends Model {
     };
   }
 
+  // This object defines the relations to other models.
   async $beforeInsert() {
     await this.hashPassword();
   }
 
+  // This object defines the relations to other models.
   async hashPassword() {
     this.password = await bcrypt.hash(this.password, 12);
   }
 
+  // This object defines the relations to other models.
   generateAccessToken() {
     return jwt.sign({ id: this.id }, process.env.ACCESS_TOKEN_SECRET, {
       expiresIn: "24h",
     });
   }
 
+  // This object defines the relations to other models.
   async matchPassword(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
   }
