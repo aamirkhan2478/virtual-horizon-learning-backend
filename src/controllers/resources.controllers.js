@@ -159,9 +159,8 @@ const getResource = async (req, res) => {
     // response the resource
     return res.status(200).json(resource);
   } catch (err) {
-
     console.log(err);
-    
+
     // response the error
     return res.status(400).json({ error: err.message });
   }
@@ -451,6 +450,27 @@ const getUserResources = async (req, res) => {
   }
 };
 
+// @route   GET /api/resource/latest
+// @desc    Show Latest 6 Resources
+// @access  Public
+const getLatestResources = async (_, res) => {
+  try {
+    // Show latest 6 resources
+    const resources = await Resources.query().limit(6).orderBy("id", "desc");
+
+    // Check if resources are not available
+    if (!resources) {
+      return res.status(404).json({ message: "Resources not found" });
+    }
+
+    // response the resources
+    res.status(200).json(resources);
+  } catch (err) {
+    // response the error
+    res.status(400).json({ error: err.message });
+  }
+};
+
 module.exports = {
   createResource,
   getResources,
@@ -461,4 +481,5 @@ module.exports = {
   makePayment,
   getSession,
   getUserResources,
+  getLatestResources,
 };

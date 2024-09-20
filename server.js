@@ -59,7 +59,7 @@ app.get("/", (_req, res) => {
 
 // Routes
 app.use("/api/user", userRouter);
-app.use("/api/resource", auth, resourceRouter);
+app.use("/api/resource", resourceRouter);
 app.use("/api/notification", auth, notificationRouter);
 app.use("/api/meeting", auth, meetingRouter);
 
