@@ -76,10 +76,10 @@ const createResource = async (req, res) => {
     });
 
     // response the resource
-    res.status(201).json(resource);
+    return res.status(201).json(resource);
   } catch (err) {
     // response the error
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
@@ -97,10 +97,10 @@ const getResources = async (_, res) => {
     }
 
     // response the resources
-    res.status(200).json(resources);
+    return res.status(200).json(resources);
   } catch (err) {
     // response the error
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
@@ -145,15 +145,12 @@ const getResource = async (req, res) => {
     // Check if assign teacher is not available
     if (!assignTeacher) {
       resource["assignTeacher"] = "";
+      resource["assignTeacherEmail"] = "";
+      resource["assignTeacherPic"] = "";
     } else {
       resource["assignTeacher"] = assignTeacher.name;
-    }
-
-    // Check if assign teacher email is not available
-    if (!assignTeacher) {
-      resource["assignTeacherEmail"] = "";
-    } else {
       resource["assignTeacherEmail"] = assignTeacher.email;
+      resource["assignTeacherPic"] = assignTeacher.pic;
     }
 
     // response the resource
@@ -182,10 +179,10 @@ const deleteResource = async (req, res) => {
     }
 
     // response the message
-    res.status(200).json({ message: "Resource deleted successfully!" });
+    return res.status(200).json({ message: "Resource deleted successfully!" });
   } catch (err) {
     // response the error
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
@@ -252,10 +249,10 @@ const updateResource = async (req, res) => {
       });
 
     // response the resource
-    res.status(200).json(resource);
+    return res.status(200).json(resource);
   } catch (err) {
     // response the error
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
@@ -363,10 +360,10 @@ const makePayment = async (req, res) => {
     });
 
     // response the session
-    res.status(200).json({ id: session.id, data: session });
+    return res.status(200).json({ id: session.id, data: session });
   } catch (error) {
     // response the error
-    res.status(500).send({ error: error.message });
+    return res.status(500).send({ error: error.message });
   }
 };
 
@@ -420,10 +417,10 @@ const getSession = async (req, res) => {
     }
 
     // response the session
-    res.status(200).json(session);
+    return res.status(200).json(session);
   } catch (error) {
     // response the error
-    res.status(500).send({ error: error.message });
+    return res.status(500).send({ error: error.message });
   }
 };
 
@@ -443,10 +440,10 @@ const getUserResources = async (req, res) => {
       .where("user_resources.userId", req.user.id);
 
     // response the resources
-    res.status(200).json(resources);
+    return res.status(200).json(resources);
   } catch (err) {
     // response the error
-    res.status(400).json({ error: { error: err.message } });
+    return res.status(400).json({ error: { error: err.message } });
   }
 };
 
@@ -459,15 +456,38 @@ const getLatestResources = async (_, res) => {
     const resources = await Resources.query().limit(6).orderBy("id", "desc");
 
     // Check if resources are not available
-    if (!resources) {
+    if (!resources || resources.length === 0) {
       return res.status(404).json({ message: "Resources not found" });
     }
 
-    // response the resources
-    res.status(200).json(resources);
+    // Show teacher name, email and pic in response
+    const resourcesData = [];
+
+    for (let i = 0; i < resources.length; i++) {
+      const resource = resources[i];
+
+      const userResource = await UserResource.query()
+        .where("resourceId", resource.id)
+        .andWhere("isAssigned", true)
+        .first();
+
+      const user = await User.query().findById(userResource.userId);
+
+      // Check if user exists
+      if (user) {
+        resource["teacherName"] = user.name;
+        resource["teacherEmail"] = user.email;
+        resource["teacherPic"] = user.pic;
+      }
+
+      resourcesData.push(resource);
+    }
+
+    // Respond with the resources data
+    return res.status(200).json(resourcesData);
   } catch (err) {
-    // response the error
-    res.status(400).json({ error: err.message });
+    // Respond with the error
+    return res.status(400).json({ error: err.message });
   }
 };
 
