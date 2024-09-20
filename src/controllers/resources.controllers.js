@@ -143,16 +143,27 @@ const getResource = async (req, res) => {
       .first();
 
     // Check if assign teacher is not available
-    resource["assignTeacher"] = assignTeacher.name;
+    if (!assignTeacher) {
+      resource["assignTeacher"] = "";
+    } else {
+      resource["assignTeacher"] = assignTeacher.name;
+    }
 
     // Check if assign teacher email is not available
-    resource["assignTeacherEmail"] = assignTeacher.email;
+    if (!assignTeacher) {
+      resource["assignTeacherEmail"] = "";
+    } else {
+      resource["assignTeacherEmail"] = assignTeacher.email;
+    }
 
     // response the resource
-    res.status(200).json(resource);
+    return res.status(200).json(resource);
   } catch (err) {
+
+    console.log(err);
+    
     // response the error
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
@@ -304,10 +315,10 @@ const assignResource = async (req, res) => {
     });
 
     // response the user resource
-    res.status(201).json(userResource);
+    return res.status(201).json(userResource);
   } catch (err) {
     // response the error
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
