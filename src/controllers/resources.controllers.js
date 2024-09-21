@@ -466,10 +466,15 @@ const getLatestResources = async (_, res) => {
     for (let i = 0; i < resources.length; i++) {
       const resource = resources[i];
 
+      // Get user resource only isAssign true
       const userResource = await UserResource.query()
         .where("resourceId", resource.id)
         .andWhere("isAssigned", true)
         .first();
+
+      if (!userResource) {
+        continue;
+      }
 
       const user = await User.query().findById(userResource.userId);
 
