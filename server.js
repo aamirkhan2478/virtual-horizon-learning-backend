@@ -25,6 +25,7 @@ const {
 
 // import database for connecting to the database
 const db = require("./src/database/db.js");
+const { sendEmail } = require("./src/utils/mailer.utils.js");
 
 // Initialize database
 db();
@@ -63,6 +64,23 @@ app.use("/api/user", userRouter);
 app.use("/api/resource", resourceRouter);
 app.use("/api/notification", auth, notificationRouter);
 app.use("/api/meeting", auth, meetingRouter);
+
+// Contact form
+app.post("/api/contact", async (req, res) => {
+  const { name, email, message, subject } = req.body;
+
+  // Send email
+  const mailResponse = await sendEmail({
+    email,
+    emailType: "contact",
+    name,
+    message,
+    subject,
+  });
+
+  // Return response
+  res.json({ message: "Email sent successfully", mailResponse });
+});
 
 app.use(notFound);
 app.use(errorHandler);

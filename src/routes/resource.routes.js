@@ -11,6 +11,8 @@ const {
   getSession,
   getUserResources,
   getLatestResources,
+  getQuizzes,
+  generateQuiz,
 } = require("../controllers/resources.controllers.js");
 
 // import auth middleware for authentication
@@ -57,6 +59,12 @@ router.get("/user-resources", auth, getUserResources);
 
 //Handle get latest 6 resources
 router.get("/latest", getLatestResources);
+
+// Handle get quizzes
+router.get("/quizzes", auth, getQuizzes);
+
+// Handle ai quiz
+router.post("/generate-quiz", auth, generateQuiz);
 
 // Export the router
 module.exports = router;
