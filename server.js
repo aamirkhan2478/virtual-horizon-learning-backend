@@ -48,6 +48,7 @@ app.use(
     origin: [
       process.env.CLIENT_URL_DEVELOPMENT,
       process.env.CLIENT_URL_PRODUCTION,
+      "http://127.0.0.1:3000",
     ],
   })
 );
