@@ -64,6 +64,7 @@ app.use("/api/user", userRouter);
 app.use("/api/resource", resourceRouter);
 app.use("/api/notification", auth, notificationRouter);
 app.use("/api/meeting", auth, meetingRouter);
+app.use("/api/counts", require("./src/routes/counts.routes"));
 
 // Contact form
 app.post("/api/contact", async (req, res) => {

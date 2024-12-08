@@ -131,11 +131,10 @@ const createResource = async (req, res) => {
     //   });
     // }
 
-    // 5. Respond with the created resource and associated questions
+    // Response the resource
     return res.status(201).json({
       resource,
-      // questions,
-      message: "Resource and quiz created successfully!",
+      message: "Resource created successfully!",
     });
   } catch (err) {
     console.log(err);
@@ -594,65 +593,61 @@ const getQuizzes = async (req, res) => {
   }
 };
 
+// @route   POST /api/resource/generate-quiz
+// @desc    Generate Quiz
+// @access  Private
 const generateQuiz = async (req, res) => {
   const { userPrompt } = req.body;
 
   try {
-    // 1. Create quiz questions using an AI prompt
+    // Create quiz questions using an AI prompt
     const prompt = `${userPrompt} in the form of json. The format of json should be like this: {"question": "What is the capital of Pakistan?", "options": ["Islamabad", "Karachi", "Lahore", "Quetta"], "correctAnswer": "Islamabad"}`;
 
     const questions = await geminiResponse(prompt);
 
-    // const questionIds = [];
-
-    // for (let i = 0; i < questions.length; i++) {
-    //   const question = questions[i];
-    //   // Convert options array to comma-separated string
-    //   question.options = question.options.join(",");
-
-    //   // Insert each question into the Questions table
-    //   const insertedQuestion = await Questions.query().insert({
-    //     question: question.question,
-    //     options: question.options,
-    //     correctAnswer: question.correctAnswer,
-    //   });
-
-    //   // Collect the inserted question ID
-    //   questionIds.push(insertedQuestion.id);
-    // }
-
-    // // 2. Create a new quiz associated with the resource
-    // const quiz = await Quiz.query().insert({
-    //   resource_id: resourceId,
-    //   completed: false,
-    // });
-
-    // // 3. Associate the quiz with the questions
-    // if (questionIds.length === 0) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "No questions were created", success: false });
-    // }
-
-    // for (let i = 0; i < questionIds.length; i++) {
-    //   const questionId = questionIds[i];
-
-    //   if (!questionId) {
-    //     return res
-    //       .status(400)
-    //       .json({ message: "Invalid question ID", success: false });
-    //   }
-
-    //   // Associate the quiz with the questions
-    //   await QuizQuestion.query().insert({
-    //     quiz_id: quiz.id,
-    //     question_id: questionId,
-    //   });
-    // }
-
     // Response with the created questions
     return res.status(200).json({
       questions,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// @route   POST /api/resource/save-quiz
+// @desc    Save Quiz
+// @access  Private
+const saveQuiz = async (req, res) => {
+  const { resource_id, questions } = req.body;
+
+  try {
+    // Create a new quiz associated with the resource
+    const quiz = await Quiz.query().insert({
+      resource_id,
+      completed: false,
+    });
+
+    // Associate the quiz with the questions
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+
+      // Insert each question into the Questions table
+      const insertedQuestion = await Questions.query().insert({
+        question: question.question,
+        options: question.options.join(","),
+        correctAnswer: question.correctAnswer,
+      });
+
+      // Associate the quiz with the questions
+      await QuizQuestion.query().insert({
+        quiz_id: quiz.id,
+        question_id: insertedQuestion.id,
+      });
+    }
+
+    // Respond with the quiz
+    return res.status(201).json({
+      quiz,
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -672,4 +667,5 @@ module.exports = {
   getLatestResources,
   getQuizzes,
   generateQuiz,
+  saveQuiz,
 };
