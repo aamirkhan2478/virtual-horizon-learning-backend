@@ -4,7 +4,7 @@ const UserResource = require("../models/user_resources.model");
 
 const counts = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId } = req.query;
 
     // Get total number of purchased resources
     const purchasedResources = await UserResource.query()
