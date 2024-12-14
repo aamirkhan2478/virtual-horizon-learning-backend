@@ -14,6 +14,9 @@ class Quiz extends Model {
         id: { type: "integer" },
         resource_id: { type: "integer" },
         completed: { type: "boolean", default: false },
+        added_by: { type: "integer" },
+        submitted_by: { type: "integer" },
+        obtained_marks: { type: "integer" },
       },
     };
   }

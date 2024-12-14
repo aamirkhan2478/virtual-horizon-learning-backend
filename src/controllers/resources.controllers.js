@@ -618,13 +618,15 @@ const generateQuiz = async (req, res) => {
 // @desc    Save Quiz
 // @access  Private
 const saveQuiz = async (req, res) => {
-  const { resource_id, questions } = req.body;
+  const { resource_id, questions, marks } = req.body;
 
   try {
     // Create a new quiz associated with the resource
     const quiz = await Quiz.query().insert({
       resource_id,
       completed: false,
+      added_by: req.user.id,
+      total_marks: marks,
     });
 
     // Associate the quiz with the questions
