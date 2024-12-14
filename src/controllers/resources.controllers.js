@@ -7,7 +7,7 @@ const Quiz = require("../models/quiz.model");
 const QuizQuestion = require("../models/quiz_questions.model");
 const stripe = require("../utils/stripe.utils");
 const geminiResponse = require("../utils/gemini_setup.utils");
-
+const Assignment = require("../models/assignment.model");
 // @route   POST /api/resource/create
 // @desc    Create New Resource
 // @access  Private
@@ -79,57 +79,7 @@ const createResource = async (req, res) => {
       price: parseFloat(price),
     });
 
-    // Create quiz questions using an AI prompt
-    // const prompt = `Make quiz on ${title} with 10 questions and 4 options each. Each question should have one correct answer in the form of json. the format of json should be like this: {"question": "What is the capital of Pakistan?", "options": ["Islamabad", "Karachi", "Lahore", "Quetta"], "correctAnswer": "Islamabad"}`;
-
-    // const questions = await geminiResponse(prompt);
-
-    // const questionIds = [];
-
-    // for (let i = 0; i < questions.length; i++) {
-    //   const question = questions[i];
-    //   // Convert options array to comma-separated string
-    //   question.options = question.options.join(",");
-
-    //   // Insert each question into the Questions table
-    //   const insertedQuestion = await Questions.query().insert({
-    //     question: question.question,
-    //     options: question.options,
-    //     correctAnswer: question.correctAnswer,
-    //   });
-
-    //   // Collect the inserted question ID
-    //   questionIds.push(insertedQuestion.id);
-    // }
-
-    // // 3. Create a new quiz associated with the resource
-    // const quiz = await Quiz.query().insert({
-    //   resource_id: resource.id,
-    //   completed: false,
-    // });
-
-    // // 4. Associate the quiz with the questions
-    // if (questionIds.length === 0) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "No questions were created", success: false });
-    // }
-
-    // for (let i = 0; i < questionIds.length; i++) {
-    //   const questionId = questionIds[i];
-
-    //   if (!questionId) {
-    //     return res
-    //       .status(400)
-    //       .json({ message: "Invalid question ID", success: false });
-    //   }
-
-    //   // Associate the quiz with the questions
-    //   await QuizQuestion.query().insert({
-    //     quiz_id: quiz.id,
-    //     question_id: questionId,
-    //   });
-    // }
+    
 
     // Response the resource
     return res.status(201).json({
@@ -614,12 +564,16 @@ const saveQuiz = async (req, res) => {
     // Respond with the quiz
     return res.status(201).json({
       quiz,
+      message: "Quiz created successfully!",
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 };
 
+// @route   GET /api/resource/quizzes
+// @desc    Get Quizzes
+// @access  Private
 const getQuizzes = async (req, res) => {
   const { resourceId } = req.query;
 
@@ -656,6 +610,108 @@ const getQuizzes = async (req, res) => {
   }
 };
 
+// @route   Patch /api/resource/update-quiz
+// @desc    Update Quiz
+// @access  Private
+const updateQuiz = async (req, res) => {
+  const { quizId, obtainedMarks, completed } = req.body;
+
+  try {
+    // Update the quiz with the obtained marks and completion status
+    const quiz = await Quiz.query().patchAndFetchById(quizId, {
+      obtained_marks: obtainedMarks,
+      completed,
+      submitted_by: req.user.id,
+    });
+
+    // Respond with the updated quiz
+    return res.status(200).json(quiz);
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// @route   Patch /api/resource/save-assignment
+// @desc    Save Assignment
+// @access  Private
+// const saveAssignment = async (req, res) => {
+//   // Upload the assignment to the server
+//   const file = req.file;
+
+//   // Get the resource ID and user ID from the request body
+//   const { resourceId, addedBy, description, marks } = req.body;
+
+//   // https://domainname.com/uploads/filename-dfse3453ds.jpeg
+//   const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+
+//   // Check if the file is not available
+//   if (!file) {
+//     return res.status(400).json({ message: "Please select a file!" });
+//   }
+
+//   // Get the file path
+//   const filePath = `${basePath}${file.filename}`;
+
+//   try {
+//     // Save the assignment to the database
+//     const assignment = await Assignment.query().insert({
+//       resourceId,
+//       added_by:addedBy,
+//       description,
+//       total_marks: marks,
+//       file: filePath,
+//     });
+
+//     // Respond with the assignment
+//     return res.status(201).json({assignment, message: "Assignment saved successfully!"});
+//   } catch (err) {
+//     console.error(err.message);
+//     return res.status(500).json({ error: err.message });
+//   }
+// }
+
+// submitAssignment = async (req, res) => {
+//   // Upload the assignment to the server
+//   const file = req.file;
+
+//   // Get the resource ID and user ID from the request body
+//   const { resourceId, submittedBy, marks } = req.body;
+
+//   // https://domainname.com/uploads/filename-dfse3453ds.jpeg
+//   const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+
+//   // Check if the file is not available
+//   if (!file) {
+//     return res.status(400).json({ message: "Please select a file!" });
+//   }
+
+//   // Get the file path
+//   const filePath = `${basePath}${file.filename}`;
+
+//   try {
+//     // Save the assignment to the database
+//     const assignment = await Assignment.query().patchAndFetchById({
+//       resourceId,
+//       submitted_by:submittedBy,
+//       file: filePath,
+//       obtained_marks: marks,
+//     });
+
+//     // Respond with the assignment
+//     return res.status(201).json({assignment, message: "Assignment saved successfully!"});
+//   } catch (err) {
+//     console.error(err.message);
+//     return res.status(500).json({ error: err.message });
+//   }
+// }
+
+
+
+
+
+
+
 module.exports = {
   createResource,
   getResources,
@@ -670,4 +726,6 @@ module.exports = {
   getQuizzes,
   generateQuiz,
   saveQuiz,
+  updateQuiz,
+  saveAssignment
 };
