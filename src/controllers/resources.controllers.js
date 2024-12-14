@@ -557,42 +557,6 @@ const getLatestResources = async (_, res) => {
   }
 };
 
-// @route   GET /api/resource/quizzes
-// @desc    Show Quizzes
-// @access  Private
-const getQuizzes = async (req, res) => {
-  try {
-    // Fetch quizzes along with the related questions
-    const quizzes = await Quiz.query().withGraphFetched("questions");
-
-    // Format the response to include the questions with separated options array
-    const formattedQuizzes = quizzes.map(async (quiz) => {
-      const resource = await Resources.query().findById(quiz.resource_id);
-
-      console.log(resource);
-
-      return {
-        id: quiz.id,
-        title: resource.title,
-        completed: quiz.completed,
-        questions: quiz.questions.map((question) => ({
-          id: question.id,
-          question: question.question,
-          options: question.options.split(","), // Split options string into an array
-          correctAnswer: question.correctAnswer,
-        })),
-      };
-    });
-
-    const formattedQuizzesData = await Promise.all(formattedQuizzes);
-
-    // Respond with the formatted quizzes
-    return res.status(200).json(formattedQuizzesData);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
-
 // @route   POST /api/resource/generate-quiz
 // @desc    Generate Quiz
 // @access  Private
@@ -653,6 +617,42 @@ const saveQuiz = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+};
+
+const getQuizzes = async (req, res) => {
+  const { resourceId } = req.query;
+
+  try {
+    // Fetch quizzes along with the related questions
+    const quizzes = await Quiz.query()
+      .withGraphFetched("questions")
+      .where("resource_id", resourceId);
+
+    // Filter out quizzes where the length of questions is zero
+    const filteredQuizzes = quizzes.filter((quiz) => quiz.questions.length > 0);
+
+    // Format the response to include the questions with separated options array
+    const formattedQuizzes = filteredQuizzes.map(async (quiz) => {
+      return {
+        id: quiz.id,
+        completed: quiz.completed,
+        questions: quiz.questions.map((question) => ({
+          id: question.id,
+          question: question.question,
+          options: question.options.split(","), // Split options string into an array
+          correctAnswer: question.correctAnswer,
+        })),
+      };
+    });
+
+    const formattedQuizzesData = await Promise.all(formattedQuizzes);
+
+    // Respond with the formatted quizzes
+    return res.status(200).json(formattedQuizzesData);
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: err.message });
   }
 };
 
