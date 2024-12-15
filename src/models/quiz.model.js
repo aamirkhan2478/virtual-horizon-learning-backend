@@ -1,4 +1,5 @@
 const { Model } = require("objection");
+const User = require("./user.model");
 
 class Quiz extends Model {
   static get tableName() {
@@ -8,15 +9,12 @@ class Quiz extends Model {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["resource_id", "completed"],
+      required: ["resource_id", "added_by"],
 
       properties: {
         id: { type: "integer" },
         resource_id: { type: "integer" },
-        completed: { type: "boolean", default: false },
         added_by: { type: "integer" },
-        submitted_by: { type: "integer" },
-        obtained_marks: { type: "integer" },
       },
     };
   }
@@ -44,6 +42,14 @@ class Quiz extends Model {
             to: "quiz_questions.question_id",
           },
           to: "questions.id",
+        },
+      },
+      user: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: User,
+        join: {
+          from: "quizzes.added_by",
+          to: "users.id",
         },
       },
     };

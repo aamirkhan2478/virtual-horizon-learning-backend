@@ -4,10 +4,7 @@
  */
 exports.up = function (knex) {
   return knex.schema.table("quizzes", (table) => {
-    table.integer("added_by");
-    table.integer("submitted_by");
-    table.integer("obtained_marks");
-    table.integer("total_marks");
+    table.integer("added_by").notNullable().defaultTo(1);
   });
 };
 
@@ -18,8 +15,5 @@ exports.up = function (knex) {
 exports.down = function (knex) {
   return knex.schema.table("quizzes", (table) => {
     table.dropColumn("added_by");
-    table.dropColumn("submitted_by");
-    table.dropColumn("obtained_marks");
-    table.dropColumn("total_marks");
   });
 };

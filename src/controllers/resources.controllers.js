@@ -7,7 +7,9 @@ const Quiz = require("../models/quiz.model");
 const QuizQuestion = require("../models/quiz_questions.model");
 const stripe = require("../utils/stripe.utils");
 const geminiResponse = require("../utils/gemini_setup.utils");
-const Assignment = require("../models/assignment.model");
+// const Assignment = require("../models/assignment.model");
+const QuizParticipant = require("../models/quiz_participants.model");
+
 // @route   POST /api/resource/create
 // @desc    Create New Resource
 // @access  Private
@@ -78,8 +80,6 @@ const createResource = async (req, res) => {
       type: type,
       price: parseFloat(price),
     });
-
-    
 
     // Response the resource
     return res.status(201).json({
@@ -532,15 +532,13 @@ const generateQuiz = async (req, res) => {
 // @desc    Save Quiz
 // @access  Private
 const saveQuiz = async (req, res) => {
-  const { resource_id, questions, marks } = req.body;
+  const { resource_id, questions } = req.body;
 
   try {
     // Create a new quiz associated with the resource
     const quiz = await Quiz.query().insert({
       resource_id,
-      completed: false,
       added_by: req.user.id,
-      total_marks: marks,
     });
 
     // Associate the quiz with the questions
@@ -567,6 +565,8 @@ const saveQuiz = async (req, res) => {
       message: "Quiz created successfully!",
     });
   } catch (error) {
+    console.log(error);
+
     return res.status(500).json({ error: error.message });
   }
 };
@@ -588,9 +588,11 @@ const getQuizzes = async (req, res) => {
 
     // Format the response to include the questions with separated options array
     const formattedQuizzes = filteredQuizzes.map(async (quiz) => {
+      const quizParticipant = await QuizParticipant.query().findById(quiz.id);
+
       return {
         id: quiz.id,
-        completed: quiz.completed,
+        completed: quizParticipant ? quizParticipant.completed : false,
         questions: quiz.questions.map((question) => ({
           id: question.id,
           question: question.question,
@@ -618,14 +620,13 @@ const updateQuiz = async (req, res) => {
 
   try {
     // Update the quiz with the obtained marks and completion status
-    const quiz = await Quiz.query().patchAndFetchById(quizId, {
-      obtained_marks: obtainedMarks,
+    const quiz = await QuizParticipant.query().patchAndFetchById(quizId, {
+      score: obtainedMarks,
       completed,
-      submitted_by: req.user.id,
     });
 
     // Respond with the updated quiz
-    return res.status(200).json(quiz);
+    return res.status(200).json({quiz, message: "Quiz updated successfully!"});
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({ error: err.message });
@@ -706,12 +707,6 @@ const updateQuiz = async (req, res) => {
 //   }
 // }
 
-
-
-
-
-
-
 module.exports = {
   createResource,
   getResources,
@@ -727,5 +722,5 @@ module.exports = {
   generateQuiz,
   saveQuiz,
   updateQuiz,
-  saveAssignment
+  // saveAssignment
 };
