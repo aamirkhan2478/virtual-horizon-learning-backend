@@ -620,7 +620,9 @@ const updateQuiz = async (req, res) => {
 
   try {
     // Update the quiz with the obtained marks and completion status
-    const quiz = await QuizParticipant.query().patchAndFetchById(quizId, {
+    const quiz = await QuizParticipant.query().insert({
+      quiz_id: quizId,
+      participant_id: req.user.id,
       score: obtainedMarks,
       completed,
     });
