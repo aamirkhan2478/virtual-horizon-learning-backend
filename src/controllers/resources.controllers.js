@@ -9,6 +9,9 @@ const stripe = require("../utils/stripe.utils");
 const geminiResponse = require("../utils/gemini_setup.utils");
 // const Assignment = require("../models/assignment.model");
 const QuizParticipant = require("../models/quiz_participants.model");
+const Assignment = require("../models/assignment.model");
+const UploadAssignment = require("../models/upload_assignment.model");
+const StudentAssignment = require("../models/student_assignment.model");
 
 // @route   POST /api/resource/create
 // @desc    Create New Resource
@@ -628,7 +631,9 @@ const updateQuiz = async (req, res) => {
     });
 
     // Respond with the updated quiz
-    return res.status(200).json({quiz, message: "Quiz updated successfully!"});
+    return res
+      .status(200)
+      .json({ quiz, message: "Quiz updated successfully!" });
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({ error: err.message });
@@ -638,76 +643,129 @@ const updateQuiz = async (req, res) => {
 // @route   Patch /api/resource/save-assignment
 // @desc    Save Assignment
 // @access  Private
-// const saveAssignment = async (req, res) => {
-//   // Upload the assignment to the server
-//   const file = req.file;
+const saveAssignment = async (req, res) => {
+  // Upload the assignment to the server
 
-//   // Get the resource ID and user ID from the request body
-//   const { resourceId, addedBy, description, marks } = req.body;
+  // Get the resource ID and user ID from the request body
+  const { resourceId, description, marks } = req.body;
 
-//   // https://domainname.com/uploads/filename-dfse3453ds.jpeg
-//   const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+  const file = req.file;
 
-//   // Check if the file is not available
-//   if (!file) {
-//     return res.status(400).json({ message: "Please select a file!" });
-//   }
+  // https://domainname.com/uploads/filename-dfse3453ds.jpeg
+  const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
 
-//   // Get the file path
-//   const filePath = `${basePath}${file.filename}`;
+  // Check if the file is not available
+  if (!file) {
+    return res.status(400).json({ message: "Please select a file!" });
+  }
 
-//   try {
-//     // Save the assignment to the database
-//     const assignment = await Assignment.query().insert({
-//       resourceId,
-//       added_by:addedBy,
-//       description,
-//       total_marks: marks,
-//       file: filePath,
-//     });
+  // Get the file path
+  const filePath = `${basePath}${file.filename}`;
 
-//     // Respond with the assignment
-//     return res.status(201).json({assignment, message: "Assignment saved successfully!"});
-//   } catch (err) {
-//     console.error(err.message);
-//     return res.status(500).json({ error: err.message });
-//   }
-// }
+  try {
+    // Save the assignment to the database
+    const assignmentData = await Assignment.query().insert({
+      resource_id: resourceId,
+      added_by: req.user.id,
+      description,
+      total_marks: marks,
+    });
 
-// submitAssignment = async (req, res) => {
-//   // Upload the assignment to the server
-//   const file = req.file;
+    // Upload the assignment to the server
+    const uploadAssignmentData = await UploadAssignment.query().insert({
+      assignment_id: assignment.id,
+      uploaded_by: req.user.id,
+      file_path: filePath,
+    });
 
-//   // Get the resource ID and user ID from the request body
-//   const { resourceId, submittedBy, marks } = req.body;
+    const assignment = {
+      ...assignmentData,
+      file: uploadAssignmentData.file_path,
+    };
 
-//   // https://domainname.com/uploads/filename-dfse3453ds.jpeg
-//   const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+    // Respond with the assignment
+    return res
+      .status(201)
+      .json({ assignment, message: "Assignment saved successfully!" });
+  } catch (error) {
+    console.log(error);
 
-//   // Check if the file is not available
-//   if (!file) {
-//     return res.status(400).json({ message: "Please select a file!" });
-//   }
+    return res.status(500).json({ error: error.message });
+  }
+};
 
-//   // Get the file path
-//   const filePath = `${basePath}${file.filename}`;
+// @route   Patch /api/resource/submit-assignment
+// @desc    Submit Assignment
+// @access  Private
+const submitAssignment = async (req, res) => {
+  // Upload the assignment to the server
+  const file = req.file;
 
-//   try {
-//     // Save the assignment to the database
-//     const assignment = await Assignment.query().patchAndFetchById({
-//       resourceId,
-//       submitted_by:submittedBy,
-//       file: filePath,
-//       obtained_marks: marks,
-//     });
+  // Get the resource ID and user ID from the request body
+  const { resourceId } = req.body;
 
-//     // Respond with the assignment
-//     return res.status(201).json({assignment, message: "Assignment saved successfully!"});
-//   } catch (err) {
-//     console.error(err.message);
-//     return res.status(500).json({ error: err.message });
-//   }
-// }
+  // https://domainname.com/uploads/filename-dfse3453ds.jpeg
+  const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+
+  // Check if the file is not available
+  if (!file) {
+    return res.status(400).json({ message: "Please select a file!" });
+  }
+
+  // Get the file path
+  const filePath = `${basePath}${file.filename}`;
+
+  try {
+    // Save the assignment to the database
+    const studentAssignment = await StudentAssignment.query().insert({
+      submitted_by: req.user.id,
+      assignment_id: resourceId,
+      score: 0,
+    });
+
+    // Upload the assignment to the server
+    const uploadAssignmentData = await UploadAssignment.query().insert({
+      assignment_id: resourceId,
+      uploaded_by: req.user.id,
+      file_path: filePath,
+    });
+
+    const assignment = {
+      ...studentAssignment,
+      file: uploadAssignmentData.file_path,
+    };
+
+    // Respond with the assignment
+    return res
+      .status(201)
+      .json({ assignment, message: "Assignment submitted successfully!" });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+const updateAssignment = async (req, res) => {
+  // Get the assignment ID from the request body
+  const { assignmentId, score, submittedBy } = req.body;
+
+  try {
+    // Update the assignment with the obtained marks by student id
+    const assignment = await StudentAssignment.query()
+      .where("submitted_by", submittedBy)
+      .findById(assignmentId)
+      .patch({ score });
+
+    // Respond with the updated assignment
+    return res
+      .status(200)
+      .json({ assignment, message: "Assignment updated successfully!" });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: err.message });
+  }
+};
 
 module.exports = {
   createResource,
@@ -724,5 +782,7 @@ module.exports = {
   generateQuiz,
   saveQuiz,
   updateQuiz,
-  // saveAssignment
+  saveAssignment,
+  submitAssignment,
+  updateAssignment,
 };

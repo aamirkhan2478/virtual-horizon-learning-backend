@@ -14,6 +14,8 @@ const {
   getQuizzes,
   generateQuiz,
   saveQuiz,
+  saveAssignment,
+  submitAssignment,
 } = require("../controllers/resources.controllers.js");
 
 // import auth middleware for authentication
@@ -70,6 +72,14 @@ router.post("/generate-quiz", auth, generateQuiz);
 // Handle save quiz
 router.post("/save-quiz", auth, saveQuiz);
 
+// Handle update quiz
+router.post("/update-quiz", auth, saveQuiz);
+
+// Handle save assignment
+router.post("/save-assignment", auth, saveAssignment);
+
+// Handle submit assignment
+router.post("/submit-assignment", auth, submitAssignment);
 
 // Export the router
 module.exports = router;
