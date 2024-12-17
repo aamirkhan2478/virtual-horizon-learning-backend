@@ -15,7 +15,11 @@ const {
   generateQuiz,
   saveQuiz,
   saveAssignment,
+  getAssignments,
+  getSubmittedAssignments,
   submitAssignment,
+  updateQuiz,
+  updateAssignment,
 } = require("../controllers/resources.controllers.js");
 
 // import auth middleware for authentication
@@ -73,13 +77,26 @@ router.post("/generate-quiz", auth, generateQuiz);
 router.post("/save-quiz", auth, saveQuiz);
 
 // Handle update quiz
-router.post("/update-quiz", auth, saveQuiz);
+router.post("/update-quiz", auth, updateQuiz);
 
-// Handle save assignment
-router.post("/save-assignment", auth, saveAssignment);
+// Add multer middleware to handle single file upload
+router.post("/save-assignment", upload.single("file"), auth, saveAssignment);
+
+// Handle get assignments
+router.get("/assignments", auth, getAssignments);
+
+// Handle get submitted assignments
+router.get("/submitted-assignments", auth, getSubmittedAssignments);
 
 // Handle submit assignment
-router.post("/submit-assignment", auth, submitAssignment);
+router.post(
+  "/submit-assignment",
+  upload.single("file"),
+  auth,
+  submitAssignment
+);
+
+router.post("/update-assignment", auth, updateAssignment);
 
 // Export the router
 module.exports = router;

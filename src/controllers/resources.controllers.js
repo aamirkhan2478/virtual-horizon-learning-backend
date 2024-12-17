@@ -591,7 +591,10 @@ const getQuizzes = async (req, res) => {
 
     // Format the response to include the questions with separated options array
     const formattedQuizzes = filteredQuizzes.map(async (quiz) => {
-      const quizParticipant = await QuizParticipant.query().findById(quiz.id);
+      // const quizParticipant = await QuizParticipant.query().findById(quiz.id);
+      const quizParticipant = await QuizParticipant.query().findOne({
+        quiz_id: quiz.id,
+      });
 
       return {
         id: quiz.id,
@@ -647,7 +650,11 @@ const saveAssignment = async (req, res) => {
   // Upload the assignment to the server
 
   // Get the resource ID and user ID from the request body
-  const { resourceId, description, marks } = req.body;
+  const { description, resourceId, marks } = {
+    ...req.body,
+    resourceId: parseInt(req.body.resourceId, 10),
+    marks: parseInt(req.body.marks, 10),
+  };
 
   const file = req.file;
 
@@ -673,7 +680,7 @@ const saveAssignment = async (req, res) => {
 
     // Upload the assignment to the server
     const uploadAssignmentData = await UploadAssignment.query().insert({
-      assignment_id: assignment.id,
+      assignment_id: assignmentData.id, // Fixed: Use `assignmentData.id`
       uploaded_by: req.user.id,
       file_path: filePath,
     });
@@ -694,55 +701,211 @@ const saveAssignment = async (req, res) => {
   }
 };
 
+// @route   GET /api/resource/assignments
+// @desc    Get Assignments for a specific resource
+// @access  Private
+const getAssignments = async (req, res) => {
+  const { resourceId } = req.query; // Extract resourceId from query params
+
+  try {
+    // Validate that resourceId is provided
+    if (!resourceId) {
+      return res.status(400).json({ message: "Resource ID is required" });
+    }
+
+    // Fetch assignments for the specified resource, join with upload_assignments and student_assignments
+    const assignments = await Assignment.query()
+      .select(
+        "assignments.id",
+        "assignments.description",
+        "assignments.total_marks",
+        "assignments.added_by",
+        "upload_assignments.file_path",
+        "student_assignments.is_submitted"
+      )
+      .leftJoin(
+        "upload_assignments",
+        "assignments.id",
+        "upload_assignments.assignment_id"
+      )
+      .leftJoin(
+        "student_assignments",
+        "assignments.id",
+        "student_assignments.assignment_id"
+      )
+      .where("assignments.resource_id", resourceId);
+
+    // Check if no assignments are found
+    if (!assignments.length) {
+      return res
+        .status(404)
+        .json({ message: "No assignments found for this resource" });
+    }
+
+    // Format the response to include is_submitted and file path
+    const formattedAssignments = assignments.map((assignment) => ({
+      id: assignment.id,
+      description: assignment.description,
+      totalMarks: assignment.total_marks,
+      addedBy: assignment.added_by,
+      uploadedFilePath: assignment.file_path || null,
+      isSubmitted: !!assignment.is_submitted, // Ensure boolean value
+    }));
+
+    // Respond with the formatted assignments
+    return res.status(200).json(formattedAssignments);
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// @route   GET /api/resource/submitted-assignments
+// @desc    Get Submitted Assignments for a specific resource
+// @access  Private
+const getSubmittedAssignments = async (req, res) => {
+  const { resourceId } = req.query; // Extract resourceId from query params
+
+  try {
+    // Validate that resourceId is provided
+    if (!resourceId) {
+      return res.status(400).json({ message: "Resource ID is required" });
+    }
+
+    // Query submitted assignments with related assignment and student details
+    const submittedAssignments = await StudentAssignment.query()
+      .select(
+        "student_assignments.id as submissionId",
+        "student_assignments.is_submitted",
+        "student_assignments.score",
+        "student_assignments.submitted_by as studentId",
+        "assignments.description as assignmentDescription",
+        "assignments.total_marks as totalMarks",
+        "upload_assignments.file_path as submittedFilePath",
+        "users.name as studentName"
+      )
+      .join(
+        "assignments",
+        "student_assignments.assignment_id",
+        "assignments.id"
+      )
+      .join(
+        "upload_assignments",
+        "assignments.id",
+        "upload_assignments.assignment_id"
+      )
+      .join("users", "student_assignments.submitted_by", "users.id")
+      .where("assignments.resource_id", resourceId)
+      .andWhere("student_assignments.is_submitted", true); // Only fetch submitted ones
+
+    // Check if there are no submissions
+    if (!submittedAssignments.length) {
+      return res.status(404).json({
+        message: "No submitted assignments found for this resource.",
+      });
+    }
+
+    // Format response
+    const formattedSubmissions = submittedAssignments.map((submission) => ({
+      submissionId: submission.submissionId,
+      studentId: submission.studentId,
+      studentName: submission.studentName,
+      assignmentDescription: submission.assignmentDescription,
+      totalMarks: submission.totalMarks,
+      score: submission.score,
+      submittedFilePath: submission.submittedFilePath,
+    }));
+
+    // Respond with formatted submissions
+    return res.status(200).json(formattedSubmissions);
+  } catch (error) {
+    console.error("Error fetching submitted assignments:", error.message);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      details: error.message,
+    });
+  }
+};
+
 // @route   Patch /api/resource/submit-assignment
 // @desc    Submit Assignment
 // @access  Private
 const submitAssignment = async (req, res) => {
-  // Upload the assignment to the server
-  const file = req.file;
-
-  // Get the resource ID and user ID from the request body
-  const { resourceId } = req.body;
-
-  // https://domainname.com/uploads/filename-dfse3453ds.jpeg
-  const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
-
-  // Check if the file is not available
-  if (!file) {
-    return res.status(400).json({ message: "Please select a file!" });
-  }
-
-  // Get the file path
-  const filePath = `${basePath}${file.filename}`;
-
   try {
-    // Save the assignment to the database
+    // Upload the assignment to the server
+    const file = req.file;
+
+    // Parse resource ID and validate the request body
+    const { resourceId } = {
+      ...req.body,
+      resourceId: parseInt(req.body.resourceId, 10),
+    };
+
+    // Base path for uploaded files
+    const basePath = `${req.protocol}://${req.get("host")}/uploads/`;
+
+    // Check if a file was uploaded
+    if (!file) {
+      return res
+        .status(400)
+        .json({ message: "Please select a file to upload!" });
+    }
+
+    // Validate resourceId
+    if (!resourceId || isNaN(resourceId)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or missing resource ID!" });
+    }
+
+    // Get the file path
+    const filePath = `${basePath}${file.filename}`;
+
+    // Verify that the resourceId exists in the assignments table
+    const existingAssignment = await Assignment.query().findById(resourceId);
+
+    if (!existingAssignment) {
+      return res.status(404).json({
+        message: "Assignment not found. Please provide a valid assignment ID.",
+      });
+    }
+
+    // Save the student's assignment submission
     const studentAssignment = await StudentAssignment.query().insert({
       submitted_by: req.user.id,
       assignment_id: resourceId,
-      score: 0,
+      score: 0, // Default score
+      is_submitted: true, // Set the flag to true
     });
 
-    // Upload the assignment to the server
+    // Upload the assignment file
     const uploadAssignmentData = await UploadAssignment.query().insert({
       assignment_id: resourceId,
       uploaded_by: req.user.id,
       file_path: filePath,
     });
 
-    const assignment = {
-      ...studentAssignment,
+    // Prepare the final assignment response
+    const assignmentResponse = {
+      id: studentAssignment.id,
+      submitted_by: studentAssignment.submitted_by,
+      assignment_id: studentAssignment.assignment_id,
+      score: studentAssignment.score,
       file: uploadAssignmentData.file_path,
     };
 
-    // Respond with the assignment
-    return res
-      .status(201)
-      .json({ assignment, message: "Assignment submitted successfully!" });
+    // Respond with success
+    return res.status(201).json({
+      assignment: assignmentResponse,
+      message: "Assignment submitted successfully!",
+    });
   } catch (error) {
-    console.log(error);
+    console.error("Error submitting assignment:", error.message);
 
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      error: "Something went wrong while submitting the assignment.",
+      details: error.message,
+    });
   }
 };
 
@@ -783,6 +946,8 @@ module.exports = {
   saveQuiz,
   updateQuiz,
   saveAssignment,
+  getAssignments,
+  getSubmittedAssignments,
   submitAssignment,
   updateAssignment,
 };

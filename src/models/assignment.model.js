@@ -23,6 +23,7 @@ class Assignment extends Model {
   static get relationMappings() {
     const Resource = require("./resources.model");
     const User = require("./user.model");
+    const UploadAssignment = require("./upload_assignment.model"); // Add this line
 
     return {
       resource: {
@@ -39,6 +40,15 @@ class Assignment extends Model {
         join: {
           from: "assignments.added_by",
           to: "users.id",
+        },
+      },
+      uploadAssignment: {
+        // Add this relation
+        relation: Model.HasOneRelation,
+        modelClass: UploadAssignment,
+        join: {
+          from: "assignments.id",
+          to: "upload_assignments.assignment_id",
         },
       },
     };
