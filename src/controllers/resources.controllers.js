@@ -909,6 +909,9 @@ const submitAssignment = async (req, res) => {
   }
 };
 
+// @route   Patch /api/resource/update-assignment
+// @desc    Update Assignment
+// @access  Private
 const updateAssignment = async (req, res) => {
   // Get the assignment ID from the request body
   const { assignmentId, score, submittedBy } = req.body;
@@ -927,6 +930,93 @@ const updateAssignment = async (req, res) => {
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({ error: err.message });
+  }
+};
+
+// @route   GET /api/resource/scores
+// @desc    Get Scores (Quiz & Assignments) for a specific resource
+// @access  Private
+const getScores = async (req, res) => {
+  const { resourceId, studentId } = req.query; // Extract resourceId and optionally studentId from query params
+  const userType = req.user.userType; // Assume userType is extracted from auth middleware
+
+  try {
+    // Validate that resourceId is provided
+    if (!resourceId) {
+      return res.status(400).json({ message: "Resource ID is required" });
+    }
+
+    // Base query for quiz scores
+    const quizQuery = QuizParticipant.query()
+      .select(
+        "quiz_participants.participant_id",
+        "users.name as student_name",
+        "quiz_participants.score",
+        "quiz_participants.completed"
+      )
+      .leftJoin("users", "quiz_participants.participant_id", "users.id")
+      .leftJoin("quizzes", "quiz_participants.quiz_id", "quizzes.id")
+      .where("quizzes.resource_id", resourceId);
+
+    // Base query for assignment scores
+    const assignmentQuery = StudentAssignment.query()
+      .select(
+        "student_assignments.submitted_by",
+        "users.name as student_name",
+        "student_assignments.score",
+        "assignments.total_marks",
+        "student_assignments.is_submitted"
+      )
+      .leftJoin("users", "student_assignments.submitted_by", "users.id")
+      .leftJoin(
+        "assignments",
+        "student_assignments.assignment_id",
+        "assignments.id"
+      )
+      .where("assignments.resource_id", resourceId);
+
+    // If studentId is provided (specific student), filter both queries
+    if (studentId) {
+      quizQuery.andWhere("quiz_participants.participant_id", studentId);
+      assignmentQuery.andWhere("student_assignments.submitted_by", studentId);
+    }
+
+    // Execute both queries
+    const [quizScores, assignmentScores] = await Promise.all([
+      quizQuery,
+      assignmentQuery,
+    ]);
+
+    // Combine quiz and assignment scores
+    const combinedScores = [
+      ...quizScores.map((quiz) => ({
+        studentId: quiz.student_id,
+        studentName: quiz.student_name,
+        obtainedMarks: quiz.score,
+        status: quiz.completed ? "Completed" : "Not Completed",
+        type: "Quiz",
+      })),
+      ...assignmentScores.map((assignment) => ({
+        studentId: assignment.student_id,
+        studentName: assignment.student_name,
+        obtainedMarks: assignment.score,
+        status: assignment.is_submitted ? "Completed" : "Not Completed",
+        type: "Assignment",
+      })),
+    ];
+
+    // Check if no scores are found
+    if (!combinedScores.length) {
+      return res
+        .status(404)
+        .json({ message: "No scores found for this resource" });
+    }
+
+    // Respond with scores (filtered for specific student if applicable)
+    return res.status(200).json(combinedScores);
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -950,4 +1040,5 @@ module.exports = {
   getSubmittedAssignments,
   submitAssignment,
   updateAssignment,
+  getScores,
 };

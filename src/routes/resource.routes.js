@@ -20,6 +20,7 @@ const {
   submitAssignment,
   updateQuiz,
   updateAssignment,
+  getScores,
 } = require("../controllers/resources.controllers.js");
 
 // import auth middleware for authentication
@@ -97,6 +98,8 @@ router.post(
 );
 
 router.post("/update-assignment", auth, updateAssignment);
+
+router.get("/scores", auth, getScores);
 
 // Export the router
 module.exports = router;
